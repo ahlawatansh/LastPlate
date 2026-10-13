@@ -1,0 +1,6 @@
+{
+  "name": "LastPlate - Food Delivery & Surplus Rescue",
+  "description": "Smart food delivery and surplus food rescue platform featuring a 3-year predictive menu planner, multi-role portals, and live simulated delivery tracking.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
