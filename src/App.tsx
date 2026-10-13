@@ -13,7 +13,7 @@ import { AdminPortal } from './components/admin/AdminPortal';
 import { checkGoogleRedirectResult } from './services/firebase';
 
 const AppContent: React.FC = () => {
-  const { currentUser, users, loginWithFirebaseUser } = useApp();
+  const { currentUser, users, loginWithFirebaseUser, logout } = useApp();
 
   const [authView, setAuthView] = useState<'LOGIN' | 'SIGNUP'>('LOGIN');
   const [googlePrefillData, setGooglePrefillData] = useState<{
@@ -23,6 +23,12 @@ const AppContent: React.FC = () => {
     photoURL?: string;
   } | null>(null);
   const [isCartOpen, setIsCartOpen] = useState(false);
+
+  const handleOpenLogin = () => {
+    setGooglePrefillData(null);
+    setAuthView('LOGIN');
+    logout();
+  };
 
   // Check if returning from a Google Redirect authentication flow
   useEffect(() => {
@@ -80,7 +86,10 @@ const AppContent: React.FC = () => {
             googlePrefillData={googlePrefillData}
           />
         )}
-        <DemoAccountBar />
+        <DemoAccountBar
+          onOpenAuth={() => setAuthView('LOGIN')}
+          onLogout={handleOpenLogin}
+        />
       </div>
     );
   }
@@ -90,7 +99,10 @@ const AppContent: React.FC = () => {
     return (
       <div className="relative">
         <PendingApprovalView />
-        <DemoAccountBar />
+        <DemoAccountBar
+          onOpenAuth={handleOpenLogin}
+          onLogout={handleOpenLogin}
+        />
       </div>
     );
   }
@@ -163,7 +175,10 @@ const AppContent: React.FC = () => {
       </div>
 
       {/* Floating Demo Account Quick-Switcher Bar */}
-      <DemoAccountBar />
+      <DemoAccountBar
+        onOpenAuth={handleOpenLogin}
+        onLogout={handleOpenLogin}
+      />
     </div>
   );
 };

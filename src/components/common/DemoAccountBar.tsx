@@ -1,14 +1,15 @@
 import React from 'react';
 import { motion } from 'motion/react';
-import { ShoppingBag, UtensilsCrossed, Bike, Building2, LogIn } from 'lucide-react';
+import { ShoppingBag, UtensilsCrossed, Bike, Building2, LogIn, LogOut } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { UserRole } from '../../types';
 
 interface DemoAccountBarProps {
   onOpenAuth?: () => void;
+  onLogout?: () => void;
 }
 
-export const DemoAccountBar: React.FC<DemoAccountBarProps> = ({ onOpenAuth }) => {
+export const DemoAccountBar: React.FC<DemoAccountBarProps> = ({ onOpenAuth, onLogout }) => {
   const { currentUser, quickLoginDemo, logout } = useApp();
 
   const accounts: {
@@ -43,8 +44,30 @@ export const DemoAccountBar: React.FC<DemoAccountBarProps> = ({ onOpenAuth }) =>
     },
   ];
 
+  const isDemoAccount = Boolean(
+    currentUser && (
+      currentUser.id === 'user-customer-1' ||
+      currentUser.id === 'user-restaurant-1' ||
+      currentUser.id === 'user-delivery-1' ||
+      currentUser.id === 'user-admin-1' ||
+      currentUser.email?.endsWith('@lastplate.demo')
+    )
+  );
+
+  const isRealUserLoggedIn = Boolean(currentUser && !isDemoAccount);
+
   const handleLoginClick = () => {
     if (onOpenAuth) {
+      onOpenAuth();
+    } else {
+      logout();
+    }
+  };
+
+  const handleLogoutClick = () => {
+    if (onLogout) {
+      onLogout();
+    } else if (onOpenAuth) {
       onOpenAuth();
     } else {
       logout();
@@ -58,7 +81,7 @@ export const DemoAccountBar: React.FC<DemoAccountBarProps> = ({ onOpenAuth }) =>
       {/* 4 Portals Container: Clean border, no shadow drop */}
       <div className="bg-white rounded-full border border-slate-200/90 p-1 flex items-center justify-center gap-1 flex-nowrap whitespace-nowrap h-11 relative">
         {accounts.map((acc) => {
-          const isActive = currentUser?.role === acc.role;
+          const isActive = isDemoAccount && currentUser?.role === acc.role;
           return (
             <button
               key={acc.role}
@@ -84,19 +107,30 @@ export const DemoAccountBar: React.FC<DemoAccountBarProps> = ({ onOpenAuth }) =>
         })}
       </div>
 
-      {/* Login Button: Active black when on login/signup screen, otherwise white */}
-      <button
-        onClick={handleLoginClick}
-        className={`flex items-center gap-1.5 px-4 h-11 rounded-full text-xs font-bold transition-all cursor-pointer shrink-0 whitespace-nowrap ${
-          isAuthActive
-            ? 'bg-[#18181B] text-white border border-[#18181B]'
-            : 'border border-slate-200/90 bg-white text-zinc-900 hover:bg-slate-50'
-        }`}
-        title={currentUser ? 'Log out / Switch account' : 'Sign in to account'}
-      >
-        <LogIn className={`w-3.5 h-3.5 ${isAuthActive ? 'text-white' : 'text-zinc-800'}`} />
-        <span>Login</span>
-      </button>
+      {/* Login or Logout Button */}
+      {isRealUserLoggedIn ? (
+        <button
+          onClick={handleLogoutClick}
+          className="flex items-center gap-1.5 px-4 h-11 rounded-full text-xs font-bold transition-all cursor-pointer shrink-0 whitespace-nowrap border border-slate-200/90 bg-white text-zinc-900 hover:bg-slate-50 hover:text-black"
+          title="Log out and return to login"
+        >
+          <LogOut className="w-3.5 h-3.5 text-zinc-800" />
+          <span>Logout</span>
+        </button>
+      ) : (
+        <button
+          onClick={handleLoginClick}
+          className={`flex items-center gap-1.5 px-4 h-11 rounded-full text-xs font-bold transition-all cursor-pointer shrink-0 whitespace-nowrap ${
+            isAuthActive
+              ? 'bg-[#18181B] text-white border border-[#18181B]'
+              : 'border border-slate-200/90 bg-white text-zinc-900 hover:bg-slate-50'
+          }`}
+          title={currentUser ? 'Switch to login screen' : 'Sign in to account'}
+        >
+          <LogIn className={`w-3.5 h-3.5 ${isAuthActive ? 'text-white' : 'text-zinc-800'}`} />
+          <span>Login</span>
+        </button>
+      )}
     </div>
   );
 };
