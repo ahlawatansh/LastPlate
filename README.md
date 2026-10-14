@@ -11,7 +11,7 @@
 [![Vite](https://img.shields.io/badge/Vite-8.3-646cff.svg?logo=vite)](https://vitejs.dev/)
 [![Firebase](https://img.shields.io/badge/Firebase-v11-orange.svg?logo=firebase)](https://firebase.google.com/)
 
-### 🔗 Live: [lastplate.vercel.app](https://lastplate.vercel.app/)
+### 🔗 Live: [last-plate-mu.vercel.app](https://last-plate-mu.vercel.app/)
 
 </div>
 
@@ -22,42 +22,48 @@
 Commercial food waste and restaurant operational inefficiencies usually stem from a single structural flaw: kitchens rely on guesswork to decide how much food to prepare each day, and when portions inevitably remain unsold at night, there is no dynamic mechanism to clear them before closing.
 
 I built **LastPlate** to solve both sides of this equation:
-1. **Upstream Prevention (AI Studio):** A time-series demand forecasting engine trained across 3 years of daily kitchen operational data (1,095 days, 24 Indian festivals, seasonal shifts, meal periods) that advises chefs on exact preparation batch sizes with safety buffers to eliminate overproduction.
+1. **Upstream Prevention (AI Studio):** A time-series demand forecasting engine trained across historical operational data of daily kitchen (1,095 days, festivals , seasonal shifts, meal periods) that advises chefs on exact preparation batch sizes with safety buffers to eliminate overproduction.
 2. **Downstream Rescue (Dynamic Pricing Engine):** An automated time-decay clearance auction that continuously reduces prices on unsold food as kitchen closing approaches, clearing fresh meals into the hands of budget-conscious diners before expiration.
 
 ---
 
-## Screenshots
+## Visuals
 
 **Customer Portal** — discover fresh chef specials and live surplus rescue deals with dynamic discounts
 
 ![Customer Portal](./screenshots/customer-portal.png)
 
-**AI Studio Demand Forecast** — 3-year historical time-series forecasting, festival multipliers, and prep optimization
+
+**AI Studio Demand Forecast** — Historical data time-series forecasting, festival multipliers, and prep optimization
 
 ![AI Studio Forecast](./screenshots/ai-studio-forecast.png)
+
 
 **Dynamic Price Scheduling** — time-decay pricing engine adjusting discounts by closing proximity and portion quantity
 
 ![Dynamic Price Scheduling](./screenshots/dynamic-pricing.png)
 
+
 **Live Order Tracking & Geolocation** — interactive route simulation, courier status, and customer telemetry
 
 ![Order Tracking](./screenshots/order-tracking.png)
+
 
 **Delivery Partner Portal** — active delivery pool, dispatch simulator, and shift earnings management
 
 ![Delivery Portal](./screenshots/delivery-portal.png)
 
+
 **Admin Governance Portal** — partner verification, FSSAI compliance auditing, and platform metrics
 
 ![Admin Portal](./screenshots/admin-portal.png)
+
 
 ---
 
 ## Features
 
-**AI Demand Forecasting & Daily Kitchen Scheduling** — Analyzes 3 years (1,095 days) of day-of-week demand patterns, YoY growth, seasonal demand shifts (Monsoon, Winter, Summer), and 24 Indian festival multipliers (Diwali, Eid, Holi, Navratri diet shifts) to output item-by-item prep recommendations with an empirical MAE of 1.64 portions.
+**AI Demand Forecasting & Daily Kitchen Scheduling** — Analyzes historical data (1,095 days) of day-of-week demand patterns, YoY growth, seasonal demand shifts (Monsoon, Winter, Summer), and 24 Indian festival multipliers (Diwali, Eid, Holi, Navratri diet shifts) to output item-by-item prep recommendations with an empirical MAE of 1.64 portions.
 
 **What-If Scenario Simulation** — Kitchen managers can dynamically simulate macro factors like unexpected weather swings (0.5x to 2.0x demand multipliers), safety margin overrides (0% to 25%), and price elasticity ($\epsilon = -1.15$) to preview projected revenue and waste risk before cooking begins.
 
@@ -80,7 +86,7 @@ I built **LastPlate** to solve both sides of this equation:
 | Frontend | React 19, TypeScript, Tailwind CSS v4, Motion (Framer Motion), Lucide React |
 | Backend & Server | Node.js, Express, TypeScript |
 | Cloud & Auth | Firebase Authentication (Google OAuth), Cloud Firestore |
-| AI / Data Engine | 3-Year Time-Series Decomposition, Price Elasticity Modeling, Dynamic Markdown Decay |
+| AI / Data Engine | Historical Time-Series Decomposition, Price Elasticity Modeling, Dynamic Markdown Decay |
 | Build Tool | Vite 8, esbuild |
 
 ---
@@ -109,7 +115,7 @@ LastPlate/
 │   ├── data/               # Seed data for restaurants, dishes & baseline state
 │   ├── services/
 │   │   ├── firebase.ts     # Firebase Auth & Firestore client
-│   │   └── historicalDataEngine.ts # 3-year ML forecasting & dynamic pricing math
+│   │   └── historicalDataEngine.ts # Historical data ML forecasting & dynamic pricing math
 │   ├── types/              # TypeScript definitions & data models
 │   ├── App.tsx             # Root router & role-based screen switcher
 │   ├── index.css           # Tailwind v4 configuration & base styles
@@ -126,43 +132,9 @@ LastPlate/
 
 ---
 
-## Running it locally
-
-**Prerequisites:** Node 20+, npm 10+
-
-```bash
-git clone https://github.com/ahlawatansh/LastPlate.git
-cd LastPlate
-npm install
-cp .env.example .env
-```
-
-Fill in `.env` (pre-configured with demo Firebase credentials):
-```env
-VITE_FIREBASE_API_KEY="your-api-key"
-VITE_FIREBASE_AUTH_DOMAIN="lastplate.firebaseapp.com"
-VITE_FIREBASE_PROJECT_ID="lastplate"
-VITE_FIREBASE_STORAGE_BUCKET="lastplate.firebasestorage.app"
-VITE_FIREBASE_MESSAGING_SENDER_ID="638334894533"
-VITE_FIREBASE_APP_ID="your-app-id"
-```
-
-Start the local development server:
-```bash
-npm run dev
-```
-
-Production build & run:
-```bash
-npm run build
-npm start
-```
-
----
-
 ## AI Algorithms & Mathematical Formulations
 
-### 1. 3-Year Time-Series Demand Decomposition
+### 1. Historical Time-Series Demand Decomposition
 The daily expected portion demand for any dish is computed from historical baseline day-of-week averages compounded by cyclical and calendar regressors:
 
 $$\text{Expected Demand} = \overline{D}_{\text{dow}} \times M_{\text{festival}} \times M_{\text{season}} \times M_{\text{trend}} \times (1 + \epsilon \cdot \Delta P)$$
