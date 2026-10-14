@@ -10,7 +10,6 @@ export interface User {
   phone?: string;
   avatarUrl?: string;
   createdAt: string;
-  // Role-specific attached data
   restaurantProfile?: RestaurantProfile;
   deliveryProfile?: DeliveryProfile;
   customerProfile?: CustomerProfile;
@@ -30,7 +29,7 @@ export interface RestaurantProfile {
   cuisine: string;
   address: string;
   openingHours: string;
-  closingTimeStr: string; // e.g. "23:30"
+  closingTimeStr: string;
   operatingDays: string[];
   phone: string;
   rating: number;
@@ -99,8 +98,8 @@ export interface SurplusListing {
   quantityAvailable: number;
   initialQuantity: number;
   isVeg: boolean;
-  listedAt: string; // ISO string
-  closingTime: string; // ISO string for today's closing
+  listedAt: string;
+  closingTime: string;
   status: 'AVAILABLE' | 'RESERVED' | 'SOLD_OUT' | 'EXPIRED';
   prepTimeInfo: string;
   imageUrl?: string;
@@ -168,10 +167,10 @@ export interface Order {
 
 export interface HistoricalDailyRecord {
   id: string;
-  date: string; // YYYY-MM-DD
+  date: string;
   dayOfWeek: 'Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday' | 'Saturday' | 'Sunday';
-  month: number; // 1-12
-  year: number; // 2023, 2024, 2025, 2026
+  month: number;
+  year: number;
   season: 'Winter' | 'Spring' | 'Summer' | 'Monsoon' | 'Autumn';
   festivalName?: string;
   isWeekend: boolean;
@@ -200,11 +199,10 @@ export interface ForecastPrediction {
   safetyBufferQty: number;
   currentPreparedStock: number;
   surplusRisk: 'LOW' | 'MEDIUM' | 'HIGH';
-  confidenceScore: number; // 0-100%
+  confidenceScore: number;
   expectedRevenueInr: number;
   expectedWasteUnits: number;
   keyDrivers: string[];
-  // Attribution deltas
   baselineAvgDemand: number;
   weekdayDeltaPercent: number;
   festivalDeltaPercent: number;
@@ -215,21 +213,21 @@ export interface ModelAccuracyEvaluation {
   modelName: string;
   holdoutPeriod: string;
   totalRecordsEvaluated: number;
-  meanAbsoluteError: number; // MAE (lower is better)
-  weightedAbsolutePercentageError: number; // WAPE %
+  meanAbsoluteError: number;
+  weightedAbsolutePercentageError: number;
   accuracyPercent: number;
   baselineMae: number;
-  errorReductionVsBaseline: number; // % improvement
+  errorReductionVsBaseline: number;
 }
 
 export interface WhatIfScenarioParameters {
-  demandMultiplier: number; // e.g. 1.0 = normal, 1.15 = +15%
-  safetyBufferPercent: number; // e.g. 10%
-  priceAdjustmentPercent: number; // -20% to +20%
-  productionCostUnit: number; // e.g. INR per unit
-  wastePenaltyCostUnit: number; // INR cost per wasted meal
-  missedSalePenaltyUnit: number; // INR opportunity cost
-  festivalImpactFactor: number; // 0.5 to 2.0
+  demandMultiplier: number;
+  safetyBufferPercent: number;
+  priceAdjustmentPercent: number;
+  productionCostUnit: number;
+  wastePenaltyCostUnit: number;
+  missedSalePenaltyUnit: number;
+  festivalImpactFactor: number;
 }
 
 export interface AuditLog {

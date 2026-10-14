@@ -389,7 +389,7 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({ dish, onClose 
         className="p-2 sm:p-3 rounded-[36px] bg-white/50 backdrop-blur-sm max-w-5xl sm:max-w-6xl w-full cursor-default my-auto"
       >
         <div className="bg-white rounded-3xl w-full max-h-[82vh] overflow-hidden border border-slate-200 flex flex-col">
-        {/* Top bar - Black & White Sleek Header */}
+
         <div className="px-6 py-3.5 border-b border-slate-200 flex items-center justify-between bg-white text-black shrink-0">
           <div className="flex items-center gap-3">
             <button
@@ -440,11 +440,10 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({ dish, onClose 
           </div>
         </div>
 
-        {/* Modal Body with 2 Columns */}
         <div className="flex-1 overflow-y-auto grid grid-cols-1 lg:grid-cols-12 divide-y lg:divide-y-0 lg:divide-x divide-slate-100">
-          {/* Left Column: Dish details, ingredients & recipe steps */}
+
           <div className="lg:col-span-8 p-6 sm:p-8 space-y-6">
-            {/* Dish Hero Image & Quick Info */}
+
             <div className="relative rounded-3xl overflow-hidden aspect-video bg-slate-100 border border-slate-200/60">
               <img
                 src={dish.imageUrl || 'https://images.unsplash.com/photo-1589302168068-964664d93dc0?w=800&auto=format&fit=crop&q=80'}
@@ -468,7 +467,6 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({ dish, onClose 
               </div>
             </div>
 
-            {/* Title & Metadata Pills */}
             <div className="space-y-3">
               <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 font-heading tracking-tight">
                 {dish.name}
@@ -496,7 +494,6 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({ dish, onClose 
                 {dish.description}
               </p>
 
-              {/* Nutrition breakdown pills (from Image 5) */}
               <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-between gap-3 text-xs font-semibold text-slate-700 overflow-x-auto">
                 <div className="text-center">
                   <span className="block text-[10px] text-slate-400 uppercase font-bold">Carbs</span>
@@ -520,7 +517,6 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({ dish, onClose 
               </div>
             </div>
 
-            {/* Ingredients & Fresh Produce */}
             <div className="space-y-3">
               <h3 className="text-sm font-extrabold text-slate-900 uppercase tracking-wider font-heading">
                 Ingredients & Fresh Produce
@@ -545,7 +541,6 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({ dish, onClose 
               </div>
             </div>
 
-            {/* Comprehensive Nutritional & Health Wellness Profile */}
             <div className="space-y-3">
               <h3 className="text-sm font-extrabold text-slate-900 uppercase tracking-wider font-heading">
                 Nutritional & Health Profile
@@ -603,7 +598,6 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({ dish, onClose 
               </div>
             </div>
 
-            {/* Bottom Add to Cart Action */}
             <div className="pt-2">
               <button
                 onClick={() => {
@@ -618,7 +612,6 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({ dish, onClose 
             </div>
           </div>
 
-          {/* Right Column: Customer Reviews & Social Comments (from Image 5) */}
           <div className="lg:col-span-4 p-6 sm:p-7 flex flex-col justify-between bg-slate-50/50">
             <div>
               <div className="pb-4 border-b border-slate-200">
@@ -627,7 +620,6 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({ dish, onClose 
                 </h3>
               </div>
 
-              {/* Comments List */}
               <div className="py-4 space-y-3.5 max-h-[500px] overflow-y-auto">
                 {comments.map((c) => (
                   <div key={c.id} className="p-3.5 rounded-2xl bg-white border border-slate-200/80 space-y-1.5">
@@ -650,7 +642,6 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({ dish, onClose 
               </div>
             </div>
 
-            {/* Add Comment Input Form (from Image 5) */}
             <form onSubmit={handleAddComment} className="mt-4 pt-3 border-t border-slate-200">
               <div className="relative">
                 <input

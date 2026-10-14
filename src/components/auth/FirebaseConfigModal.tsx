@@ -31,12 +31,12 @@ export const FirebaseConfigModal: React.FC<FirebaseConfigModalProps> = ({
 
   const handleParseJson = () => {
     try {
-      // Allow pasting object literal or JSON: apiKey: "...", or "apiKey": "..."
+
       let cleaned = rawJson.trim();
       if (cleaned.startsWith('const firebaseConfig =')) {
         cleaned = cleaned.replace('const firebaseConfig =', '').replace(/;$/, '').trim();
       }
-      // If JS object notation without quotes on keys
+
       cleaned = cleaned.replace(/([{,]\s*)([a-zA-Z0-9_]+)\s*:/g, '$1"$2":');
       const parsed = JSON.parse(cleaned);
 
@@ -74,8 +74,7 @@ export const FirebaseConfigModal: React.FC<FirebaseConfigModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-md">
       <div className="bg-white rounded-3xl max-w-lg w-full border border-zinc-200 shadow-2xl overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-200">
-        
-        {/* Header */}
+
         <div className="px-6 py-4 border-b border-zinc-100 flex items-center justify-between bg-[#F2F9F4]">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-full bg-[#1B4332] text-white flex items-center justify-center">
@@ -98,7 +97,6 @@ export const FirebaseConfigModal: React.FC<FirebaseConfigModalProps> = ({
           </button>
         </div>
 
-        {/* Tab switcher */}
         <div className="flex border-b border-zinc-100 text-xs px-6 pt-3 gap-4">
           <button
             type="button"
@@ -124,7 +122,6 @@ export const FirebaseConfigModal: React.FC<FirebaseConfigModalProps> = ({
           </button>
         </div>
 
-        {/* Body */}
         <div className="p-6 space-y-4">
           <div className="p-3 bg-amber-50 rounded-2xl border border-amber-200/80 text-amber-900 text-xs flex gap-2.5">
             <ShieldAlert className="w-4 h-4 shrink-0 text-amber-600 mt-0.5" />

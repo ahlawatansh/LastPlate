@@ -33,10 +33,10 @@ export const LoginView: React.FC<LoginViewProps> = ({ onSwitchToSignup, onGoogle
     if (!googleUser.email) return;
     const existing = users.find((u) => u.email.toLowerCase() === googleUser.email.toLowerCase());
     if (existing) {
-      // User already has an account -> direct login!
+
       loginWithFirebaseUser(googleUser);
     } else {
-      // If user does not have an account, treat as sign up: show sign up card with prefilled details!
+
       if (onGoogleSignUpRequired) {
         onGoogleSignUpRequired(googleUser);
       } else {
@@ -59,7 +59,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onSwitchToSignup, onGoogle
 
     setIsSubmitting(true);
     try {
-      // 1. Authenticate with Firebase Email & Password
+
       const fbResult = await signInWithEmailFirebase(email, password);
       if (fbResult.success && fbResult.user) {
         loginWithFirebaseUser({
@@ -71,7 +71,6 @@ export const LoginView: React.FC<LoginViewProps> = ({ onSwitchToSignup, onGoogle
         return;
       }
 
-      // 2. Fallback to existing registered user in session
       const success = login(email);
       if (!success) {
         setError(fbResult.error || 'No user account found with this email. Please check your credentials or create a new account.');
@@ -124,8 +123,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onSwitchToSignup, onGoogle
   return (
     <div className="min-h-screen bg-[#FAF9F6] flex items-center justify-center p-4 sm:p-6 pb-[60px] sm:pb-[60px] overflow-y-auto">
       <div className="bg-white rounded-3xl max-w-4xl w-full my-auto border border-zinc-200 overflow-hidden flex flex-col">
-          
-          {/* Top Bar with sleek styling */}
+
           <div className="px-6 py-4 border-b border-zinc-100 flex items-center justify-between bg-white shrink-0">
             <div className="flex items-center gap-2">
               <span className="text-2xl font-extrabold tracking-tight font-heading leading-none lowercase">
@@ -145,10 +143,8 @@ export const LoginView: React.FC<LoginViewProps> = ({ onSwitchToSignup, onGoogle
             </button>
           </div>
 
-          {/* Landscape Horizontal 2-Column Body */}
           <div className="grid grid-cols-1 md:grid-cols-12 flex-1">
-            
-            {/* Left Column (5 cols): Brand & Feature Showcase with Black Background */}
+
             <div className="md:col-span-5 bg-[#121214] p-6 sm:p-8 flex flex-col justify-between border-r border-zinc-800 text-white">
               <div className="space-y-4">
                 <h2 className="text-xl sm:text-2xl font-black font-heading leading-snug text-white">
@@ -180,7 +176,6 @@ export const LoginView: React.FC<LoginViewProps> = ({ onSwitchToSignup, onGoogle
               </div>
             </div>
 
-            {/* Right Column (7 cols): Real-Time Login Form */}
             <div className="md:col-span-7 p-6 sm:p-8 flex flex-col justify-center bg-white space-y-4">
               <div>
                 <h3 className="text-lg font-bold text-slate-900 font-heading">
@@ -272,7 +267,6 @@ export const LoginView: React.FC<LoginViewProps> = ({ onSwitchToSignup, onGoogle
                 </button>
               </form>
 
-              {/* Separator - short and thin */}
               <div className="relative my-2 max-w-[180px] mx-auto w-full">
                 <div className="absolute inset-0 flex items-center">
                   <div className="w-full border-t border-slate-200/60" />
@@ -284,7 +278,6 @@ export const LoginView: React.FC<LoginViewProps> = ({ onSwitchToSignup, onGoogle
                 </div>
               </div>
 
-              {/* Google Sign In Button Below Email */}
               {isGoogleLoading ? (
                 <div className="w-full flex items-center justify-between py-2.5 px-4 border border-slate-200 rounded-full bg-slate-50 text-xs">
                   <div className="flex items-center gap-2.5 text-slate-700 font-medium truncate">
@@ -344,8 +337,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onSwitchToSignup, onGoogle
             </div>
           </div>
         </div>
-        
-        {/* Firebase Config Setup Modal */}
+
         <FirebaseConfigModal
           isOpen={isConfigModalOpen}
           onClose={() => setIsConfigModalOpen(false)}

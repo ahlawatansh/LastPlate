@@ -123,8 +123,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 pb-28">
-      
-      {/* Admin Command Header */}
+
       <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 text-xs text-purple-700 font-bold uppercase tracking-wider mb-1">
@@ -147,7 +146,6 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
         </button>
       </div>
 
-      {/* KPI Cards Strip */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="p-5 rounded-2xl bg-white border border-slate-200">
           <span className="text-[11px] font-semibold text-slate-400 block uppercase">Restaurants</span>
@@ -182,14 +180,12 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
         </div>
       </div>
 
-      {/* TAB 0: OPERATIONS & SCHEDULE CALENDAR */}
       {activeTab === 'calendar' && (
         <div className="space-y-6">
           <ScheduleCalendarView mode="CUSTOMER" />
         </div>
       )}
 
-      {/* TAB 1: ONBOARDING APPROVALS QUEUE */}
       {activeTab === 'approvals' && (
         <div className="space-y-6">
           <div className="flex items-center justify-between">
@@ -287,7 +283,6 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
         </div>
       )}
 
-      {/* TAB 2: ALL ORDERS & PAYMENTS MONITOR */}
       {activeTab === 'orders' && (
         <div className="space-y-6">
           <div className="flex items-center justify-between">
@@ -352,7 +347,6 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
         </div>
       )}
 
-      {/* TAB 3: 3-YEAR ML FORECAST BENCHMARKS */}
       {activeTab === 'forecast_benchmarks' && (
         <div className="space-y-6">
           <div className="bg-white rounded-3xl p-8 border border-slate-200 space-y-4">
@@ -392,7 +386,6 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
         </div>
       )}
 
-      {/* TAB 4: FOOD RESCUE & AUDIT LOGS */}
       {activeTab === 'impact' && (
         <div className="space-y-6">
           <div className="bg-white rounded-3xl p-8 border border-slate-200 space-y-4">
@@ -430,7 +423,6 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
         </div>
       )}
 
-      {/* REJECT APPLICATION MODAL */}
       <AnimatePresence>
         {showRejectModal && (
           <div onClick={() => setShowRejectModal(false)} className="fixed inset-0 z-50 bg-black/40 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 overflow-y-auto cursor-pointer">
@@ -443,7 +435,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
               className="p-2 sm:p-3 rounded-[36px] bg-white/50 backdrop-blur-sm max-w-lg w-full cursor-default my-auto"
             >
               <div className="bg-white rounded-3xl w-full overflow-hidden border border-slate-200 flex flex-col">
-              {/* Top Bar - Black & White Sleek Header */}
+
               <div className="px-6 py-3.5 border-b border-slate-200 flex items-center justify-between bg-white text-black shrink-0">
                 <div className="flex items-center gap-3">
                   <div>

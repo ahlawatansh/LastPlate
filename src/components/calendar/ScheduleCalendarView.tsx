@@ -21,13 +21,12 @@ export const ScheduleCalendarView: React.FC<ScheduleCalendarViewProps> = () => {
   const { accuracyEvaluation, historyRecords, whatIfParams } = useApp();
   const dateScrollRef = useRef<HTMLDivElement>(null);
 
-  // Generate all 31 days for current month (October 2026)
   const slidingDates = useMemo(() => {
     const days: { date: number; day: string; fullDate: string }[] = [];
     const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     for (let d = 1; d <= 31; d++) {
       const dateStr = d < 10 ? `0${d}` : `${d}`;
-      const dt = new Date(2026, 9, d); // October 2026
+      const dt = new Date(2026, 9, d);
       days.push({
         date: d,
         day: dayNames[dt.getDay()],
@@ -37,7 +36,6 @@ export const ScheduleCalendarView: React.FC<ScheduleCalendarViewProps> = () => {
     return days;
   }, []);
 
-  // Today is October 12, 2026 (index 11)
   const todayIndex = 11;
   const [selectedDateIndex, setSelectedDateIndex] = useState<number>(todayIndex);
   const [completedBatches, setCompletedBatches] = useState<Record<string, boolean>>({
@@ -45,7 +43,6 @@ export const ScheduleCalendarView: React.FC<ScheduleCalendarViewProps> = () => {
     'batch-lunch-2026-10-12': true,
   });
 
-  // Scroll current date into the exact middle on mount
   useEffect(() => {
     if (dateScrollRef.current) {
       const container = dateScrollRef.current;
@@ -59,7 +56,6 @@ export const ScheduleCalendarView: React.FC<ScheduleCalendarViewProps> = () => {
 
   const selectedDateObj = slidingDates[selectedDateIndex] || slidingDates[todayIndex];
 
-  // Calculate real AI forecast data for selected date across 4 kitchen periods
   const { breakfastForecast, lunchForecast, eveningForecast, dinnerForecast, allPredictions } = useMemo(() => {
     const breakfast = calculateSuggestedForecast(historyRecords, selectedDateObj.fullDate, 'BREAKFAST', whatIfParams);
     const lunch = calculateSuggestedForecast(historyRecords, selectedDateObj.fullDate, 'LUNCH', whatIfParams);
@@ -75,7 +71,6 @@ export const ScheduleCalendarView: React.FC<ScheduleCalendarViewProps> = () => {
     };
   }, [historyRecords, selectedDateObj.fullDate, whatIfParams]);
 
-  // Daily batches dynamically generated from real AI predictions
   const dailyBatches = useMemo(() => {
     const topBreakfast = breakfastForecast.reduce((prev, curr) => (curr.expectedDemand > prev.expectedDemand ? curr : prev), breakfastForecast[0]);
     const topLunch = lunchForecast.reduce((prev, curr) => (curr.expectedDemand > prev.expectedDemand ? curr : prev), lunchForecast[0]);
@@ -138,7 +133,6 @@ export const ScheduleCalendarView: React.FC<ScheduleCalendarViewProps> = () => {
     ];
   }, [breakfastForecast, lunchForecast, eveningForecast, dinnerForecast, selectedDateObj.fullDate]);
 
-  // Aggregate metrics derived dynamically
   const totalExpected = allPredictions.reduce((sum, p) => sum + p.expectedDemand, 0);
   const totalPrep = allPredictions.reduce((sum, p) => sum + p.suggestedPrepQty, 0);
   const totalSurplusReserve = allPredictions.reduce((sum, p) => sum + p.expectedWasteUnits, 0);
@@ -167,15 +161,13 @@ export const ScheduleCalendarView: React.FC<ScheduleCalendarViewProps> = () => {
     }));
   };
 
-  // Check festival for selected date
   const targetFestival = INDIAN_FESTIVALS.find(
     (f) => f.month === 10 && f.day === selectedDateObj.date
   );
 
   return (
     <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 space-y-6">
-      
-      {/* Top Header */}
+
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-zinc-100">
         <div className="flex items-center gap-3.5">
           <div className="w-11 h-11 rounded-2xl bg-[#18181B] text-white flex items-center justify-center font-bold">
@@ -196,7 +188,6 @@ export const ScheduleCalendarView: React.FC<ScheduleCalendarViewProps> = () => {
           </div>
         </div>
 
-        {/* Sliding Navigation Controls */}
         <div className="flex items-center gap-2 self-start sm:self-auto">
           <span className="text-xs font-bold text-zinc-900 px-3.5 py-1.5 rounded-full bg-zinc-100">
             October 2026
@@ -224,7 +215,6 @@ export const ScheduleCalendarView: React.FC<ScheduleCalendarViewProps> = () => {
         </div>
       </div>
 
-      {/* Date Picker Bar: Full 31 days with enhanced corner radius, scrolling, current date in middle */}
       <div className="relative">
         <div
           ref={dateScrollRef}
@@ -267,7 +257,6 @@ export const ScheduleCalendarView: React.FC<ScheduleCalendarViewProps> = () => {
         </div>
       </div>
 
-      {/* AI Model Accuracy Comparison Card for Current Selected Date */}
       <div className="rounded-3xl p-5 sm:p-6 bg-zinc-50 border border-zinc-200/90 space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-zinc-200/60">
           <div>
@@ -287,7 +276,6 @@ export const ScheduleCalendarView: React.FC<ScheduleCalendarViewProps> = () => {
             </p>
           </div>
 
-          {/* Enlarged Accuracy and Holdout WAPE badges with increased height & width */}
           <div className="flex items-center gap-2.5 flex-wrap">
             <span className="px-5 py-2.5 sm:px-6 sm:py-3 rounded-full bg-[#18181B] text-white text-xs sm:text-sm font-black flex items-center gap-2">
               <Percent className="w-4 h-4" /> Accuracy: {avgAccuracy}%
@@ -298,7 +286,6 @@ export const ScheduleCalendarView: React.FC<ScheduleCalendarViewProps> = () => {
           </div>
         </div>
 
-        {/* 4 Performance KPI Badges */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
           <div className="bg-white p-3.5 rounded-2xl border border-zinc-200 space-y-0.5">
             <span className="text-[10px] uppercase font-bold text-zinc-400 block font-heading">
@@ -342,7 +329,6 @@ export const ScheduleCalendarView: React.FC<ScheduleCalendarViewProps> = () => {
         </div>
       </div>
 
-      {/* Production Batches Schedule Timeline: Wired from Real Historical AI Data */}
       <div className="space-y-4 pt-2">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-extrabold text-zinc-900 font-heading">

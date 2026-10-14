@@ -44,13 +44,11 @@ export const Header: React.FC<HeaderProps> = ({ onOpenCart, activeTab = 'menu', 
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [showFilterDropdown, setShowFilterDropdown] = useState(false);
 
-  // Quick filter states
   const [filterVegOnly, setFilterVegOnly] = useState(false);
   const [filterSurplusOnly, setFilterSurplusOnly] = useState(false);
 
   const cartItemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
-  // Filter notifications for active portal role only
   const roleNotifs = notifications.filter((n) => {
     if (!currentUser) return false;
     const isDemoUser =
@@ -94,7 +92,6 @@ export const Header: React.FC<HeaderProps> = ({ onOpenCart, activeTab = 'menu', 
     return 'LP';
   };
 
-  // Original menu tabs per portal with current sleek styling
   const getPortalTabs = () => {
     if (!currentUser) return [];
 
@@ -207,12 +204,11 @@ export const Header: React.FC<HeaderProps> = ({ onOpenCart, activeTab = 'menu', 
     <>
       <header className="sticky top-0 z-40 bg-white border-b border-slate-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Main Top Bar: Single clean horizontal row */}
+
           <div className="h-16 flex items-center justify-between gap-3 sm:gap-6">
-            
-            {/* Left Section: Logo + Portal Menu anchored together so menu never moves when basket changes */}
+
             <div className="flex items-center gap-6 sm:gap-8 min-w-0">
-              {/* Logo: keep only lastplate in logo with 'plate' in dark green */}
+
               <div className="flex items-center shrink-0">
                 <a
                   href="/"
@@ -225,7 +221,6 @@ export const Header: React.FC<HeaderProps> = ({ onOpenCart, activeTab = 'menu', 
                 </a>
               </div>
 
-              {/* Portal-specific original menus with current sleek pill styling and smooth sliding pill */}
               {currentUser && setActiveTab && (
                 <nav className="hidden lg:flex items-center gap-1.5 overflow-x-auto scrollbar-none py-1 relative">
                   {portalTabs.map((tab) => {
@@ -263,9 +258,8 @@ export const Header: React.FC<HeaderProps> = ({ onOpenCart, activeTab = 'menu', 
               )}
             </div>
 
-            {/* Right Side: Bell, Cart, and User Profile */}
             <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-              {/* Notification Bell */}
+
               {currentUser && (
                 <button
                   type="button"
@@ -280,7 +274,6 @@ export const Header: React.FC<HeaderProps> = ({ onOpenCart, activeTab = 'menu', 
                 </button>
               )}
 
-              {/* Basket / Cart button: White matching notifications */}
               {currentUser?.role === 'CUSTOMER' && onOpenCart && (
                 <button
                   type="button"
@@ -298,7 +291,6 @@ export const Header: React.FC<HeaderProps> = ({ onOpenCart, activeTab = 'menu', 
                 </button>
               )}
 
-              {/* User Profile Pill: Shows Account Holder Name and Email in all 4 panels */}
               {currentUser ? (
                 <div className="flex items-center gap-2.5 p-1 sm:pr-2 rounded-full select-none cursor-default">
                   <div className="w-8 h-8 rounded-full bg-[#18181B] text-white font-black text-xs flex items-center justify-center shrink-0 tracking-wider select-none shadow-xs border border-zinc-900/10">
@@ -324,7 +316,6 @@ export const Header: React.FC<HeaderProps> = ({ onOpenCart, activeTab = 'menu', 
             </div>
           </div>
 
-          {/* Mobile Navigation Tabs (visible only on smaller screens) */}
           {currentUser && setActiveTab && (
             <div className="lg:hidden py-2 border-t border-slate-100 overflow-x-auto scrollbar-none flex items-center gap-1">
               {portalTabs.map((tab) => {
@@ -356,12 +347,10 @@ export const Header: React.FC<HeaderProps> = ({ onOpenCart, activeTab = 'menu', 
         </div>
       </header>
 
-      {/* Sub-Header Row: Hello Jessica & Welcome to LastPlate + Whole portal unified search */}
       {currentUser && (
         <section className="bg-transparent border-b border-slate-100/60">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
-            
-            {/* "Hello, Jessica · Welcome to LastPlate" */}
+
             <div>
               <h1 className="text-2xl sm:text-3xl font-normal text-slate-800 tracking-tight font-heading">
                 Hello, <span className="font-extrabold text-slate-950">{getFirstName()}</span>
@@ -371,7 +360,6 @@ export const Header: React.FC<HeaderProps> = ({ onOpenCart, activeTab = 'menu', 
               </p>
             </div>
 
-            {/* Whole portal unified search bar: longer with light black hover border and no shadow */}
             <div className="w-full md:w-auto md:min-w-[480px] lg:min-w-[560px] max-w-2xl">
               <div className="relative">
                 <div className="flex items-center bg-white border border-zinc-200 hover:border-zinc-400 focus-within:border-black rounded-full pl-4 pr-1.5 py-1.5 transition-all">
@@ -393,7 +381,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenCart, activeTab = 'menu', 
                       <X className="w-3.5 h-3.5" />
                     </button>
                   )}
-                  {/* Filter icon button on right edge */}
+
                   <button
                     type="button"
                     onClick={() => setShowFilterDropdown(!showFilterDropdown)}
@@ -404,7 +392,6 @@ export const Header: React.FC<HeaderProps> = ({ onOpenCart, activeTab = 'menu', 
                   </button>
                 </div>
 
-                {/* Filter Popover Dropdown with Click-Outside Backdrop */}
                 {showFilterDropdown && (
                   <>
                     <div
@@ -474,7 +461,6 @@ export const Header: React.FC<HeaderProps> = ({ onOpenCart, activeTab = 'menu', 
         </section>
       )}
 
-      {/* Reset Confirmation Modal */}
       {showResetConfirm && (
         <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-md flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl p-6 max-w-sm w-full space-y-4 border border-slate-200">
@@ -505,7 +491,6 @@ export const Header: React.FC<HeaderProps> = ({ onOpenCart, activeTab = 'menu', 
         </div>
       )}
 
-      {/* Notifications Slide-over Drawer (Filtered per portal role) */}
       <NotificationDrawer
         isOpen={showNotifDrawer}
         onClose={() => setShowNotifDrawer(false)}

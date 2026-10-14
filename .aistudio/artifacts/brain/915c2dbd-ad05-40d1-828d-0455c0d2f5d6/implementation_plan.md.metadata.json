@@ -1,6 +1,0 @@
-{
-  "summary": "Detailed architectural blueprint and implementation plan for LastPlate, featuring four connected dashboards (Customer, Restaurant, Delivery Partner, Admin), dynamic surplus food rescue pricing, a shared delivery partner acceptance pool, simulated checkout, and the flagship 3-year Predictive Menu Forecast Studio with both baseline and ML-style accuracy evaluations.",
-  "updatedAt": "2026-10-12T14:26:36.136108413Z",
-  "requestFeedback": true,
-  "userFacing": true
-}

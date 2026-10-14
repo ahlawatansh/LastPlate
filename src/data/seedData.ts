@@ -282,13 +282,11 @@ export const SEED_MENU_ITEMS: MenuItem[] = [
   },
 ];
 
-// Helper to generate current closing timestamps for surplus deals:
-// Set closing time 50 minutes from now so the dynamic decay is in active clearance window!
 export const getDynamicSurplusTimes = () => {
   const current = Date.now();
   return {
-    listedAt: new Date(current - 2.5 * 60 * 60 * 1000).toISOString(), // Listed 2.5 hours ago
-    closingTime: new Date(current + 50 * 60 * 1000).toISOString(), // 50 mins from now (closing soon!)
+    listedAt: new Date(current - 2.5 * 60 * 60 * 1000).toISOString(),
+    closingTime: new Date(current + 50 * 60 * 1000).toISOString(),
   };
 };
 
@@ -410,7 +408,7 @@ export const SEED_ORDERS: Order[] = [
     paymentMethod: 'UPI',
     paymentStatus: 'PAID',
     paymentId: 'PAY-UPI-551982',
-    orderStatus: 'ORDER_PLACED', // Active incoming order waiting for kitchen confirmation
+    orderStatus: 'ORDER_PLACED',
     estimatedDeliveryMinutes: 25,
     deliveryDistanceKm: 2.2,
     timeline: [
@@ -435,13 +433,13 @@ export const SEED_ORDERS: Order[] = [
       { menuItemId: 'surplus-3', name: 'Chilled Kesari Rabdi Phirni Terracotta Pots (Rescue Deal)', price: 79, quantity: 1, isSurplus: true, surplusListingId: 'surplus-3' },
     ],
     itemTotal: 689,
-    discountTotal: 66, // Savings from surplus rescue
+    discountTotal: 66,
     deliveryFee: 35,
     finalAmount: 658,
     paymentMethod: 'UPI',
     paymentStatus: 'PAID',
     paymentId: 'PAY-UPI-984210',
-    orderStatus: 'RESTAURANT_ACCEPTED', // Active order ready for kitchen/delivery partner tests
+    orderStatus: 'RESTAURANT_ACCEPTED',
     estimatedDeliveryMinutes: 28,
     deliveryDistanceKm: 3.4,
     timeline: [

@@ -10,7 +10,7 @@ export const PendingApprovalView: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#FAF9F6] flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-lg text-center">
-        
+
         <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-[#1B4332]/10 text-[#1B4332] border border-[#1B4332]/20 mb-4">
           <Clock className="w-8 h-8" />
         </div>
@@ -18,7 +18,7 @@ export const PendingApprovalView: React.FC = () => {
         <h1 className="text-2xl font-black text-slate-900 tracking-tight">
           Application Under Review
         </h1>
-        
+
         <p className="mt-2 text-sm text-slate-600 max-w-md mx-auto leading-relaxed">
           Your <strong className="text-slate-900">{currentUser?.role === 'RESTAURANT' ? 'Restaurant Partner' : 'Delivery Partner'}</strong> onboarding request has been submitted and is currently waiting for Platform Administrator verification.
         </p>
@@ -77,7 +77,6 @@ export const PendingApprovalView: React.FC = () => {
             For trust, compliance, and food safety standards, access to the kitchen dashboard or delivery request pool is granted once an administrator verifies business credentials.
           </div>
 
-          {/* Demo Convenience: Quick switch to Admin to approve! */}
           <div className="mt-4 p-4 rounded-2xl bg-purple-50 border border-purple-200 flex flex-col sm:flex-row items-center justify-between gap-3">
             <div className="text-xs text-purple-900">
               <span className="font-bold flex items-center gap-1.5">

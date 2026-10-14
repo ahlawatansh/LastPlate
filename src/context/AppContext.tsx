@@ -57,7 +57,6 @@ interface AppContextType {
   whatIfParams: WhatIfScenarioParameters;
   setWhatIfParams: React.Dispatch<React.SetStateAction<WhatIfScenarioParameters>>;
 
-  // Auth & Roles
   login: (email: string) => boolean;
   loginWithGoogle: (email?: string, name?: string) => boolean;
   loginWithFirebaseUser: (data: { uid?: string; email: string | null; displayName: string | null; photoURL?: string | null }) => boolean;
@@ -83,11 +82,9 @@ interface AppContextType {
     licenseNo: string;
   }) => boolean;
 
-  // Search
   searchQuery: string;
   setSearchQuery: (query: string) => void;
 
-  // Cart
   addToCart: (item: MenuItem | SurplusListing, isSurplus?: boolean) => void;
   removeFromCart: (cartItemId: string) => void;
   updateCartQuantity: (cartItemId: string, delta: number) => void;
@@ -96,7 +93,6 @@ interface AppContextType {
   cartOriginalTotal: number;
   cartSavings: number;
 
-  // Orders
   placeOrder: (paymentMethod: 'UPI' | 'CARD' | 'COD', deliveryAddress: string, notes?: string) => Order | null;
   addRestaurantOrder: (orderData: {
     customerName: string;
@@ -116,22 +112,18 @@ interface AppContextType {
   deliveryDeclineOrder: (orderId: string) => void;
   deliveryUpdateStatus: (orderId: string, status: 'PICKED_UP' | 'OUT_FOR_DELIVERY' | 'DELIVERED') => void;
 
-  // Menu & Surplus
   addMenuItem: (item: Omit<MenuItem, 'id' | 'restaurantId'>) => void;
   updateMenuItem: (id: string, updates: Partial<MenuItem>) => void;
   deleteMenuItem: (id: string) => void;
   createSurplusListing: (listing: Omit<SurplusListing, 'id' | 'restaurantId' | 'currentPrice' | 'listedAt' | 'status'>) => void;
   updateSurplusListing: (id: string, updates: Partial<SurplusListing>) => void;
 
-  // Admin
   approveApplication: (appId: string) => void;
   rejectApplication: (appId: string, reason: string) => void;
   resetDemoData: () => void;
 
-  // Real-time Order Simulation Helper
   advanceOrderSimulation: (orderId: string) => OrderStatus | null;
 
-  // Dynamic Surplus Price Helpers (time left & quantity left)
   calculateLiveSurplusPrice: (listing: SurplusListing) => number;
   getSurplusPricingBreakdown: (listing: SurplusListing) => {
     timeLeftMinutes: number;
@@ -143,7 +135,6 @@ interface AppContextType {
     urgencyLabel: string;
   };
 
-  // Notification management
   addNotification: (notif: {
     title: string;
     message: string;
@@ -178,7 +169,7 @@ const sanitizeBangaloreAddress = (addr: string): string => {
 };
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // Load state from localStorage or seed
+
   const [users, setUsers] = useState<User[]>(() => {
     const saved = localStorage.getItem(STORAGE_KEYS.USERS);
     const parsed: User[] = saved ? JSON.parse(saved) : SEED_USERS;
@@ -240,10 +231,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return saved ? JSON.parse(saved) : [];
   });
 
-  // Global search across dishes, restaurant items & surplus
   const [searchQuery, setSearchQuery] = useState('');
 
-  // What-If scenario params state
   const [whatIfParams, setWhatIfParams] = useState<WhatIfScenarioParameters>({
     demandMultiplier: 1.0,
     safetyBufferPercent: 12,
@@ -254,7 +243,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     festivalImpactFactor: 1.0,
   });
 
-  // 3-Year Dataset (memorized generation once)
   const historyRecords = useMemo(() => {
     return generate3YearHistoricalDataset();
   }, []);
@@ -263,7 +251,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return evaluateForecastAccuracy(historyRecords);
   }, [historyRecords]);
 
-  // Sync to local storage
   useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
   }, [users]);
@@ -276,7 +263,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   }, [currentUserId]);
 
-  // Real-time synchronization helper
   const broadcastSync = useCallback((payload: Record<string, any>) => {
     if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
       try {
@@ -284,12 +270,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         bc.postMessage({ type: 'SYNC_STATE', ...payload });
         bc.close();
       } catch (err) {
-        // ignore
+
       }
     }
   }, []);
 
-  // Listen for real-time broadcasts from other tabs/instances
   useEffect(() => {
     let bc: BroadcastChannel | null = null;
     if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
@@ -317,7 +302,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         if (e.key === STORAGE_KEYS.NOTIFS) setNotifications(JSON.parse(e.newValue));
         if (e.key === STORAGE_KEYS.MENU) setMenuItems(JSON.parse(e.newValue));
       } catch (err) {
-        // ignore
+
       }
     };
 
@@ -366,12 +351,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     localStorage.setItem(STORAGE_KEYS.CART, JSON.stringify(cart));
   }, [cart]);
 
-  // Current logged in user object
   const currentUser = useMemo(() => {
     return users.find((u) => u.id === currentUserId) || null;
   }, [users, currentUserId]);
 
-  // Log audit helper
   const addAuditLog = useCallback(
     (action: string, details: string, targetId?: string) => {
       const newLog: AuditLog = {
@@ -388,13 +371,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     [currentUser]
   );
 
-  // Dynamic Surplus Price calculation based on BOTH closing time left AND quantity left
   const calculateLiveSurplusPrice = useCallback((listing: SurplusListing): number => {
     const now = Date.now();
     const listed = new Date(listing.listedAt).getTime();
     let close = new Date(listing.closingTime).getTime();
 
-    // Ensure there is always an active clearance window for live demonstration
     if (close <= now) {
       close = now + 48 * 60 * 1000;
     }
@@ -403,19 +384,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const elapsed = Math.max(0, now - listed);
     const timeProgress = Math.min(1, Math.max(0, elapsed / totalDuration));
 
-    // Quantity left ratio: portions remaining vs initial listing
     const initialQty = Math.max(1, listing.initialQuantity);
     const qtyRatio = Math.min(1, Math.max(0, listing.quantityAvailable / initialQty));
 
-    // 1. Time decay factor: Smooth continuous non-linear decay accelerating as closing nears
     const timeDecayFactor = Math.pow(timeProgress, 1.25);
 
-    // 2. Quantity clearance multiplier:
-    // If high quantity is still unsold as closing nears, clearance urgency boosts discount by up to 40%.
-    // If only 1-2 portions remain, scarcity stabilizes price so kitchen does not give away final food.
     const quantityClearanceFactor = 0.70 + 0.40 * qtyRatio;
 
-    // Combined discount weight (capped between 0.15 and 1.0)
     const combinedDiscountFactor = Math.min(1.0, Math.max(0.15, timeDecayFactor * quantityClearanceFactor));
 
     const priceDrop = (listing.originalPrice - listing.minPrice) * combinedDiscountFactor;
@@ -424,7 +399,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return Math.max(listing.minPrice, Math.min(listing.originalPrice, Math.round(calculatedPrice)));
   }, []);
 
-  // Detailed pricing breakdown explanation for UI display
   const getSurplusPricingBreakdown = useCallback(
     (listing: SurplusListing) => {
       const now = Date.now();
@@ -474,7 +448,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     [calculateLiveSurplusPrice]
   );
 
-  // Update surplus prices periodically in state with change detection to prevent unnecessary re-renders
   useEffect(() => {
     const timer = setInterval(() => {
       setSurplusListings((prev) => {
@@ -496,7 +469,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return () => clearInterval(timer);
   }, [calculateLiveSurplusPrice]);
 
-  // Auth methods
   const login = useCallback(
     (email: string): boolean => {
       const user = users.find((u) => u.email.toLowerCase() === email.toLowerCase());
@@ -511,7 +483,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return true;
       }
 
-      // Automatically initialize real account with empty database
       const namePart = email.split('@')[0].replace(/[._-]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
       const newUser: User = {
         id: `user-real-${Date.now()}`,
@@ -544,7 +515,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       let existing = users.find((u) => u.email.toLowerCase() === targetEmail.toLowerCase());
 
       if (!existing) {
-        // Create real account with empty database
+
         const newUser: User = {
           id: `user-g-${Date.now()}`,
           email: targetEmail,
@@ -586,7 +557,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       let existing = users.find((u) => u.email.toLowerCase() === targetEmail.toLowerCase());
 
       if (!existing) {
-        // Create authentic real account with completely clean/empty database
+
         const newUser: User = {
           id: data.uid || `user-g-${Date.now()}`,
           email: targetEmail,
@@ -610,7 +581,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return true;
       }
 
-      // Update existing record if needed
       setUsers((prev) =>
         prev.map((u) =>
           u.id === existing!.id
@@ -652,7 +622,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setCurrentUserId(null);
   }, [currentUser, addAuditLog]);
 
-  // Registration workflows
   const registerCustomer = useCallback(
     (data: { name: string; email: string; phone: string; address: string }): boolean => {
       const existing = users.find((u) => u.email.toLowerCase() === data.email.toLowerCase());
@@ -663,7 +632,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         email: data.email,
         name: data.name,
         role: 'CUSTOMER',
-        status: 'APPROVED', // Instant access
+        status: 'APPROVED',
         phone: data.phone,
         createdAt: new Date().toISOString(),
         customerProfile: {
@@ -703,7 +672,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         email: data.email,
         name: data.ownerName,
         role: 'RESTAURANT',
-        status: 'PENDING_APPROVAL', // Strict gate!
+        status: 'PENDING_APPROVAL',
         phone: data.phone,
         createdAt: new Date().toISOString(),
         restaurantProfile: {
@@ -742,7 +711,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       setUsers((prev) => [...prev, newUser]);
       setApplications((prev) => [newApp, ...prev]);
-      setCurrentUserId(newUser.id); // Active session will view Pending Approval Screen!
+      setCurrentUserId(newUser.id);
       setCart([]);
       localStorage.removeItem(STORAGE_KEYS.CART);
       addAuditLog('RESTAURANT_APPLICATION_SUBMITTED', `New restaurant application submitted for ${data.restaurantName} by ${data.email}.`);
@@ -769,7 +738,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         email: data.email,
         name: data.name,
         role: 'DELIVERY',
-        status: 'PENDING_APPROVAL', // Strict gate!
+        status: 'PENDING_APPROVAL',
         phone: data.phone,
         createdAt: new Date().toISOString(),
         deliveryProfile: {
@@ -803,7 +772,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       setUsers((prev) => [...prev, newUser]);
       setApplications((prev) => [newApp, ...prev]);
-      setCurrentUserId(newUser.id); // Active session will view Pending Approval Screen!
+      setCurrentUserId(newUser.id);
       setCart([]);
       localStorage.removeItem(STORAGE_KEYS.CART);
       addAuditLog('DELIVERY_APPLICATION_SUBMITTED', `Delivery partner application submitted by ${data.name} (${data.email}).`);
@@ -812,7 +781,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     [users, addAuditLog]
   );
 
-  // Cart operations
   const addToCart = useCallback(
     (item: MenuItem | SurplusListing, isSurplus = false) => {
       const cartItemId = isSurplus ? `surplus-${item.id}` : `menu-${item.id}`;
@@ -882,7 +850,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
   }, [cart]);
 
-  // Order Placement
   const placeOrder = useCallback(
     (
       paymentMethod: 'UPI' | 'CARD' | 'COD',
@@ -936,7 +903,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         notes,
       };
 
-      // Atomic inventory deduction
       setMenuItems((prev) =>
         prev.map((item) => {
           const ordered = cart.find((c) => !c.isSurplus && c.menuItemId === item.id);
@@ -950,7 +916,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         })
       );
 
-      // Surplus quantity deduction
       setSurplusListings((prev) =>
         prev.map((listing) => {
           const ordered = cart.find((c) => c.isSurplus && c.surplusListingId === listing.id);
@@ -966,7 +931,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         })
       );
 
-      // Update customer profile saved metrics
       setUsers((prev) =>
         prev.map((u) => {
           if (u.id === currentUser.id && u.customerProfile) {
@@ -989,7 +953,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       clearCart();
       addAuditLog('ORDER_CREATED', `Order ${orderId} created by ${currentUser.email} for ₹${finalAmount}.`, orderId);
 
-      // In-app notification for Customer
       const custNotif: NotificationItem = {
         id: `notif-${Date.now()}-cust`,
         userId: currentUser.id,
@@ -1001,7 +964,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         role: 'CUSTOMER',
       };
 
-      // In-app notification for Restaurant
       const restNotif: NotificationItem = {
         id: `notif-${Date.now()}-rest`,
         userId: 'user-restaurant-1',
@@ -1019,7 +981,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     [cart, currentUser, cartTotal, cartSavings, clearCart, addAuditLog]
   );
 
-  // Direct manual / POS order placement for Restaurant
   const addRestaurantOrder = useCallback(
     (orderData: {
       customerName: string;
@@ -1081,7 +1042,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         notes: orderData.notes,
       };
 
-      // Atomic inventory deduction
       setMenuItems((prev) =>
         prev.map((item) => {
           const ordered = orderData.items.find((i) => i.menuItemId === item.id);
@@ -1104,7 +1064,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     [currentUser, addAuditLog]
   );
 
-  // Restaurant Order Workflow
   const restaurantAcceptOrder = useCallback(
     (orderId: string) => {
       setOrders((prev) =>
@@ -1212,7 +1171,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     [currentUser]
   );
 
-  // Delivery Partner Workflow (Atomic pool claim)
   const deliveryAcceptOrder = useCallback(
     (orderId: string): boolean => {
       if (!currentUser || currentUser.role !== 'DELIVERY') return false;
@@ -1255,7 +1213,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const deliveryDeclineOrder = useCallback(
     (orderId: string) => {
-      // In demo mode, decline leaves order in pool for other partners
+
       addAuditLog('DELIVERY_DECLINED', `Partner ${currentUser?.email} declined order ${orderId}. Remains available in pool.`, orderId);
     },
     [currentUser, addAuditLog]
@@ -1293,7 +1251,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       );
 
       if (nextStatus === 'DELIVERED') {
-        // Increment delivery earnings
+
         setUsers((prev) =>
           prev.map((u) => {
             if (u.id === currentUser?.id && u.deliveryProfile) {
@@ -1302,7 +1260,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                 deliveryProfile: {
                   ...u.deliveryProfile,
                   totalDeliveries: u.deliveryProfile.totalDeliveries + 1,
-                  earningsInr: u.deliveryProfile.earningsInr + 45, // ₹45 per delivery
+                  earningsInr: u.deliveryProfile.earningsInr + 45,
                 },
               };
             }
@@ -1316,7 +1274,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     [currentUser, addAuditLog]
   );
 
-  // Menu item CRUD
   const addMenuItem = useCallback(
     (item: Omit<MenuItem, 'id' | 'restaurantId'>) => {
       const restId = currentUser?.restaurantProfile?.restaurantId || 'rest-green-leaf';
@@ -1378,7 +1335,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     [addAuditLog]
   );
 
-  // Admin approval management
   const approveApplication = useCallback(
     (appId: string) => {
       const app = applications.find((a) => a.id === appId);
@@ -1393,7 +1349,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         )
       );
 
-      // Authoritative update: update user account status to APPROVED
       setUsers((prev) =>
         prev.map((u) => (u.id === app.userId ? { ...u, status: 'APPROVED' } : u))
       );
@@ -1423,7 +1378,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         )
       );
 
-      // Authoritative update: update user account status to REJECTED
       setUsers((prev) =>
         prev.map((u) => (u.id === app.userId ? { ...u, status: 'REJECTED' } : u))
       );
@@ -1433,7 +1387,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     [applications, currentUser, addAuditLog]
   );
 
-  // Reset Demo Data
   const resetDemoData = useCallback(() => {
     localStorage.removeItem(STORAGE_KEYS.USERS);
     localStorage.removeItem(STORAGE_KEYS.CURRENT_USER_ID);
@@ -1458,7 +1411,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     addAuditLog('DEMO_RESET', 'System state reset to canonical seed data by admin action.');
   }, [addAuditLog]);
 
-  // Real-time stage advancement simulator for interactive testing
   const advanceOrderSimulation = useCallback(
     (orderId: string): OrderStatus | null => {
       let nextStatus: OrderStatus | null = null;

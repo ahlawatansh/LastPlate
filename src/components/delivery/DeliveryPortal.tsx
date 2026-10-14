@@ -35,7 +35,6 @@ export const DeliveryPortal: React.FC<DeliveryPortalProps> = ({
     searchQuery,
   } = useApp();
 
-  // Persist rider duty status: do not auto-turn online until rider clicks online
   const [isOnline, setIsOnline] = useState<boolean>(() => {
     const saved = localStorage.getItem('lastplate_delivery_online');
     return saved !== null ? saved === 'true' : false;
@@ -49,7 +48,6 @@ export const DeliveryPortal: React.FC<DeliveryPortalProps> = ({
     });
   };
 
-  // Available orders pool: Orders accepted by restaurant, but not yet claimed by any rider
   const availablePoolOrders = orders.filter((o) => {
     const isAvailable = ['RESTAURANT_ACCEPTED', 'PREPARING', 'READY_FOR_PICKUP'].includes(o.orderStatus) && !o.deliveryPartnerId;
     if (!isAvailable) return false;
@@ -60,14 +58,12 @@ export const DeliveryPortal: React.FC<DeliveryPortalProps> = ({
       o.deliveryAddress.toLowerCase().includes(q);
   });
 
-  // Current active delivery claimed by this delivery partner
   const activeDelivery = orders.find(
     (o) =>
       o.deliveryPartnerId === currentUser?.id &&
       !['DELIVERED', 'REJECTED', 'CANCELLED'].includes(o.orderStatus)
   );
 
-  // Past completed deliveries
   const completedDeliveries = orders.filter(
     (o) => o.deliveryPartnerId === currentUser?.id && o.orderStatus === 'DELIVERED'
   );
@@ -91,7 +87,7 @@ export const DeliveryPortal: React.FC<DeliveryPortalProps> = ({
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 pb-28">
-      
+
       {claimError && (
         <div className="p-4 rounded-2xl bg-[#1B4332]/10 border border-[#1B4332]/20 text-[#1B4332] text-xs flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -107,7 +103,6 @@ export const DeliveryPortal: React.FC<DeliveryPortalProps> = ({
         </div>
       )}
 
-      {/* Delivery Header */}
       <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 text-xs text-[#1B4332] font-bold uppercase tracking-wider mb-1">
@@ -123,7 +118,7 @@ export const DeliveryPortal: React.FC<DeliveryPortalProps> = ({
         </div>
 
         <div className="flex items-center gap-3 shrink-0">
-          {/* Rectangular Curved Duty Mode Button */}
+
           <button
             type="button"
             onClick={toggleOnlineStatus}
@@ -142,7 +137,6 @@ export const DeliveryPortal: React.FC<DeliveryPortalProps> = ({
             </span>
           </button>
 
-          {/* Rectangular Curved Earnings Card */}
           <div className="px-4 py-2 rounded-2xl min-w-[110px] h-[58px] sm:h-[62px] border border-slate-200 bg-white flex flex-col items-center justify-center text-center">
             <span className="text-[9px] uppercase font-bold tracking-wider text-slate-400">
               Earnings
@@ -154,14 +148,12 @@ export const DeliveryPortal: React.FC<DeliveryPortalProps> = ({
         </div>
       </div>
 
-      {/* TAB 0: SHIFT & DELIVERY CALENDAR */}
       {activeTab === 'calendar' && (
         <div className="space-y-6">
           <ScheduleCalendarView mode="CUSTOMER" />
         </div>
       )}
 
-      {/* TAB 1: SHARED AVAILABLE ORDER REQUEST POOL */}
       {activeTab === 'pool' && (
         <div className="space-y-6">
           <div className="flex items-center justify-between">
@@ -225,7 +217,6 @@ export const DeliveryPortal: React.FC<DeliveryPortalProps> = ({
                     </div>
                   </div>
 
-                  {/* Route Details */}
                   <div className="space-y-2 p-3.5 rounded-2xl bg-slate-50 border border-slate-100 text-xs">
                     <div className="flex items-start gap-2.5">
                       <div className="w-2 h-2 rounded-full bg-amber-500 mt-1.5 shrink-0" />
@@ -256,7 +247,6 @@ export const DeliveryPortal: React.FC<DeliveryPortalProps> = ({
                     <span>{ord.items.length} items packed</span>
                   </div>
 
-                  {/* Actions */}
                   <div className="pt-2 flex gap-2">
                     <button
                       onClick={() => handleClaimOrder(ord.id)}
@@ -279,7 +269,6 @@ export const DeliveryPortal: React.FC<DeliveryPortalProps> = ({
         </div>
       )}
 
-      {/* TAB 2: ACTIVE DELIVERY INTERACTIVE SIMULATOR */}
       {activeTab === 'active' && (
         <div className="space-y-6">
           {!activeDelivery ? (
@@ -358,7 +347,7 @@ export const DeliveryPortal: React.FC<DeliveryPortalProps> = ({
             )
           ) : (
             <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 space-y-6">
-              
+
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-slate-100">
                 <div>
                   <span className="text-[10px] font-bold uppercase tracking-wider text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full">
@@ -376,9 +365,8 @@ export const DeliveryPortal: React.FC<DeliveryPortalProps> = ({
                 </div>
               </div>
 
-              {/* Simulated Interactive Map Display */}
               <div className="relative h-64 bg-slate-950 rounded-2xl overflow-hidden border border-slate-200 flex flex-col justify-between p-6 text-white">
-                {/* Visual Grid Lines simulating GPS navigation view */}
+
                 <div className="absolute inset-0 opacity-20 bg-[radial-gradient(#38bdf8_1px,transparent_1px)] [background-size:16px_16px]" />
 
                 <div className="relative z-10 flex justify-between items-start">
@@ -397,7 +385,6 @@ export const DeliveryPortal: React.FC<DeliveryPortalProps> = ({
                   </div>
                 </div>
 
-                {/* Road Waypoint Diagram */}
                 <div className="relative z-10 flex items-center justify-between max-w-md mx-auto w-full px-4">
                   <div className="flex flex-col items-center">
                     <div className="w-8 h-8 rounded-full bg-amber-500 text-white flex items-center justify-center font-bold text-xs">
@@ -435,7 +422,6 @@ export const DeliveryPortal: React.FC<DeliveryPortalProps> = ({
                 </div>
               </div>
 
-              {/* Order Info & Customer Instructions */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
                 <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-1.5">
                   <span className="text-[11px] font-bold text-slate-400 uppercase">Customer Details</span>
@@ -455,7 +441,6 @@ export const DeliveryPortal: React.FC<DeliveryPortalProps> = ({
                 </div>
               </div>
 
-              {/* Execution Action Stepper */}
               <div className="p-6 rounded-2xl bg-slate-50 border border-slate-200 space-y-4">
                 <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700">
                   Advance Delivery Workflow Stage:
@@ -505,7 +490,6 @@ export const DeliveryPortal: React.FC<DeliveryPortalProps> = ({
         </div>
       )}
 
-      {/* TAB 3: EARNINGS & TRIP HISTORY */}
       {activeTab === 'history' && (
         <div className="space-y-6">
           <div className="flex items-center justify-between">

@@ -31,7 +31,6 @@ export const SignupView: React.FC<SignupViewProps> = ({ onSwitchToLogin, googleP
 
   const [selectedRole, setSelectedRole] = useState<'CUSTOMER' | 'RESTAURANT' | 'DELIVERY'>('CUSTOMER');
 
-  // Active Google User state (can come from props or from clicking Google directly on this screen)
   const [activeGoogleUser, setActiveGoogleUser] = useState<{
     email: string;
     name: string;
@@ -47,13 +46,11 @@ export const SignupView: React.FC<SignupViewProps> = ({ onSwitchToLogin, googleP
 
   const isGoogleUser = Boolean(activeGoogleUser?.email);
 
-  // Customer form fields
   const [custName, setCustName] = useState(activeGoogleUser?.name || '');
   const [custEmail, setCustEmail] = useState(activeGoogleUser?.email || '');
   const [custPhone, setCustPhone] = useState('');
   const [custAddress, setCustAddress] = useState('');
 
-  // Restaurant form fields
   const [restOwner, setRestOwner] = useState(activeGoogleUser?.name || '');
   const [restName, setRestName] = useState('');
   const [restEmail, setRestEmail] = useState(activeGoogleUser?.email || '');
@@ -62,7 +59,6 @@ export const SignupView: React.FC<SignupViewProps> = ({ onSwitchToLogin, googleP
   const [restAddress, setRestAddress] = useState('');
   const [restKitchen, setRestKitchen] = useState('');
 
-  // Delivery form fields
   const [delName, setDelName] = useState(activeGoogleUser?.name || '');
   const [delEmail, setDelEmail] = useState(activeGoogleUser?.email || '');
   const [delPhone, setDelPhone] = useState('');
@@ -71,14 +67,12 @@ export const SignupView: React.FC<SignupViewProps> = ({ onSwitchToLogin, googleP
   const [delServiceArea, setDelServiceArea] = useState('');
   const [delLicenseNo, setDelLicenseNo] = useState('');
 
-  // Password & state
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
 
-  // Synchronize Google user info into input states
   useEffect(() => {
     if (activeGoogleUser) {
       if (activeGoogleUser.email) {
@@ -106,7 +100,6 @@ export const SignupView: React.FC<SignupViewProps> = ({ onSwitchToLogin, googleP
           return;
         }
 
-        // Try Firebase Authentication signup if password provided and not a Google user
         if (!isGoogleUser && password) {
           const fbRes = await signUpWithEmailFirebase(custEmail, password, custName, {
             role: 'CUSTOMER',
@@ -227,12 +220,11 @@ export const SignupView: React.FC<SignupViewProps> = ({ onSwitchToLogin, googleP
         const gName = result.user.displayName || (gEmail ? gEmail.split('@')[0] : 'User');
         const existing = users.find((u) => u.email.toLowerCase() === gEmail.toLowerCase());
         if (existing) {
-          // If account already exists, log directly in!
+
           loginWithFirebaseUser(result.user);
           return;
         }
 
-        // Otherwise set active Google user to prefill form without asking for credentials again
         setActiveGoogleUser({
           uid: result.user.uid,
           email: gEmail,
@@ -281,8 +273,7 @@ export const SignupView: React.FC<SignupViewProps> = ({ onSwitchToLogin, googleP
   return (
     <div className="min-h-screen bg-[#FAF9F6] flex items-center justify-center p-4 sm:p-6 pb-[60px] sm:pb-[60px] overflow-y-auto">
       <div className="bg-white rounded-3xl max-w-4xl w-full my-auto border border-zinc-200 overflow-hidden flex flex-col">
-        
-        {/* Top Bar with sleek styling */}
+
         <div className="px-6 py-4 border-b border-zinc-100 flex items-center justify-between bg-white shrink-0">
           <div className="flex items-center gap-2">
             <span className="text-2xl font-extrabold tracking-tight font-heading leading-none lowercase">
@@ -302,10 +293,8 @@ export const SignupView: React.FC<SignupViewProps> = ({ onSwitchToLogin, googleP
           </button>
         </div>
 
-        {/* Landscape Horizontal 2-Column Body */}
         <div className="grid grid-cols-1 md:grid-cols-12 flex-1">
-          
-          {/* Left Column (5 cols): Brand & Feature Showcase with Black Background */}
+
           <div className="md:col-span-5 p-6 sm:p-8 flex flex-col justify-between border-r border-zinc-800 bg-[#121214] text-white">
             <div className="space-y-4">
               <h2 className="text-xl sm:text-2xl font-black font-heading leading-snug text-white">
@@ -356,10 +345,8 @@ export const SignupView: React.FC<SignupViewProps> = ({ onSwitchToLogin, googleP
             </div>
           </div>
 
-          {/* Right Column (7 cols): Registration Form */}
           <div className="md:col-span-7 p-6 sm:p-8 flex flex-col justify-center bg-white space-y-4">
-            
-            {/* Role Selector Bar: EXACT same theme design as bottom nav bar */}
+
             <div className="flex items-center justify-center pb-2">
               <div className="bg-white rounded-full border border-slate-200/90 p-1 flex items-center justify-center gap-1 flex-nowrap whitespace-nowrap h-11 relative shadow-xs">
                 {roles.map((r) => {
@@ -410,8 +397,7 @@ export const SignupView: React.FC<SignupViewProps> = ({ onSwitchToLogin, googleP
             )}
 
             <form onSubmit={handleSubmit} className="space-y-3.5">
-              
-              {/* Customer Form */}
+
               {selectedRole === 'CUSTOMER' && (
                 <>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
@@ -476,7 +462,6 @@ export const SignupView: React.FC<SignupViewProps> = ({ onSwitchToLogin, googleP
                 </>
               )}
 
-              {/* Restaurant Form */}
               {selectedRole === 'RESTAURANT' && (
                 <>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
@@ -570,7 +555,6 @@ export const SignupView: React.FC<SignupViewProps> = ({ onSwitchToLogin, googleP
                 </>
               )}
 
-              {/* Delivery Partner Form */}
               {selectedRole === 'DELIVERY' && (
                 <>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
@@ -673,7 +657,6 @@ export const SignupView: React.FC<SignupViewProps> = ({ onSwitchToLogin, googleP
                 </>
               )}
 
-              {/* Account Password Field - only needed when registering via direct email/password */}
               {!isGoogleUser && (
                 <div className="pt-1">
                   <label className="block text-xs font-semibold text-slate-700 mb-1">
@@ -713,10 +696,9 @@ export const SignupView: React.FC<SignupViewProps> = ({ onSwitchToLogin, googleP
               </button>
             </form>
 
-            {/* Google Signup Button & Separator - HIDDEN when already authenticated with Google */}
             {!isGoogleUser && (
               <>
-                {/* Separator - short and thin */}
+
                 <div className="relative my-2 max-w-[180px] mx-auto w-full">
                   <div className="absolute inset-0 flex items-center">
                     <div className="w-full border-t border-slate-200/60" />
@@ -778,7 +760,6 @@ export const SignupView: React.FC<SignupViewProps> = ({ onSwitchToLogin, googleP
 
         </div>
 
-        {/* Firebase Config Setup Modal */}
         <FirebaseConfigModal
           isOpen={isConfigModalOpen}
           onClose={() => setIsConfigModalOpen(false)}

@@ -37,7 +37,6 @@ export interface FirebaseConfig {
   measurementId?: string;
 }
 
-// User's official configured credentials as primary defaults
 const DEFAULT_CONFIG: FirebaseConfig = {
   apiKey: (import.meta.env.VITE_FIREBASE_API_KEY as string) || 'AIzaSyBaNuBVyg-i39iDZsBp4XdFIhwl0VE6AS8',
   authDomain: (import.meta.env.VITE_FIREBASE_AUTH_DOMAIN as string) || 'lastplate.firebaseapp.com',
@@ -119,7 +118,6 @@ export const initializeFirebase = (): {
   return { app, auth, db };
 };
 
-// Auto initialize
 initializeFirebase();
 
 export const googleProvider = new GoogleAuthProvider();
@@ -142,9 +140,6 @@ export interface FirebaseLoginResult {
   isPopupBlocked?: boolean;
 }
 
-/**
- * Check if the user returned from a Google Redirect sign-in flow
- */
 export const checkGoogleRedirectResult = async (): Promise<FirebaseLoginResult | null> => {
   if (!auth) initializeFirebase();
   if (!auth) return null;
@@ -192,9 +187,6 @@ export const checkGoogleRedirectResult = async (): Promise<FirebaseLoginResult |
   }
 };
 
-/**
- * Sign in using Google Redirect (guaranteed to bypass popup blockers)
- */
 export const signInWithGoogleRedirectFirebase = async (): Promise<void> => {
   if (!auth) initializeFirebase();
   if (!auth) {
@@ -203,9 +195,6 @@ export const signInWithGoogleRedirectFirebase = async (): Promise<void> => {
   await signInWithRedirect(auth, googleProvider);
 };
 
-/**
- * Sign in using Firebase Google Popup with safety timeout & blocker detection
- */
 export const signInWithGoogleFirebase = async (): Promise<FirebaseLoginResult> => {
   if (!auth) initializeFirebase();
 
@@ -218,7 +207,7 @@ export const signInWithGoogleFirebase = async (): Promise<FirebaseLoginResult> =
   }
 
   try {
-    // 20-second timeout race so button NEVER hangs indefinitely if browser silently blocks popups
+
     const timeoutPromise = new Promise<never>((_, reject) => {
       setTimeout(() => {
         const timeoutErr: any = new Error(
@@ -242,7 +231,6 @@ export const signInWithGoogleFirebase = async (): Promise<FirebaseLoginResult> =
       photoURL: fbUser.photoURL,
     };
 
-    // Sync user document to Firestore asynchronously without blocking login
     if (db && fbUser.uid) {
       try {
         const userRef = doc(db, 'users', fbUser.uid);
@@ -296,9 +284,6 @@ export const signInWithGoogleFirebase = async (): Promise<FirebaseLoginResult> =
   }
 };
 
-/**
- * Sign in using Firebase Email & Password
- */
 export const signInWithEmailFirebase = async (
   email: string,
   pass: string
@@ -364,9 +349,6 @@ export const signInWithEmailFirebase = async (
   }
 };
 
-/**
- * Register new user with Firebase Email & Password
- */
 export const signUpWithEmailFirebase = async (
   email: string,
   pass: string,
@@ -398,7 +380,6 @@ export const signUpWithEmailFirebase = async (
       photoURL: fbUser.photoURL,
     };
 
-    // Save user profile to Firestore
     if (db && fbUser.uid) {
       try {
         const userRef = doc(db, 'users', fbUser.uid);
@@ -438,9 +419,6 @@ export const signUpWithEmailFirebase = async (
   }
 };
 
-/**
- * Sign out from Firebase Auth
- */
 export const signOutFirebase = async (): Promise<void> => {
   if (auth) {
     try {
@@ -451,9 +429,6 @@ export const signOutFirebase = async (): Promise<void> => {
   }
 };
 
-/**
- * Firestore Helper: Save order to Firestore 'orders' collection
- */
 export const saveOrderToFirestore = async (order: any): Promise<void> => {
   if (!db) initializeFirebase();
   if (!db || !order?.id) return;
@@ -466,9 +441,6 @@ export const saveOrderToFirestore = async (order: any): Promise<void> => {
   }
 };
 
-/**
- * Firestore Helper: Save surplus listing to Firestore 'surplus' collection
- */
 export const saveSurplusToFirestore = async (listing: any): Promise<void> => {
   if (!db) initializeFirebase();
   if (!db || !listing?.id) return;

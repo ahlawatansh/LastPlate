@@ -42,14 +42,13 @@ export const NotificationDrawer: React.FC<NotificationDrawerProps> = ({
     currentUser?.id === 'user-admin-1' ||
     currentUser?.email?.endsWith('@lastplate.demo');
 
-  // Filter notifications strictly by active portal
   const portalNotifs = notifications.filter((n) => {
     if (!currentUser) return false;
     if (!isDemoUser) {
       return n.userId === currentUser.id;
     }
     if (n.role) return n.role === activePortal;
-    // Fallback heuristic if role wasn't set
+
     if (activePortal === 'CUSTOMER') return n.type === 'ORDER' || n.type === 'SURPLUS';
     if (activePortal === 'RESTAURANT') return n.type === 'ORDER' || n.type === 'FORECAST';
     if (activePortal === 'DELIVERY') return n.type === 'ORDER';
@@ -98,7 +97,7 @@ export const NotificationDrawer: React.FC<NotificationDrawerProps> = ({
     <AnimatePresence>
       {isOpen && (
         <div className="fixed inset-0 z-50 overflow-hidden flex justify-end">
-          {/* Backdrop with smooth fade */}
+
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -108,7 +107,6 @@ export const NotificationDrawer: React.FC<NotificationDrawerProps> = ({
             onClick={onClose}
           />
 
-          {/* Drawer with smooth slide from right */}
           <motion.div
             initial={{ x: '100%' }}
             animate={{ x: 0 }}
@@ -116,8 +114,7 @@ export const NotificationDrawer: React.FC<NotificationDrawerProps> = ({
             transition={{ type: 'spring', damping: 30, stiffness: 350 }}
             className="relative w-full max-w-md bg-white h-full flex flex-col justify-between z-10 shadow-2xl"
           >
-        
-        {/* Top Header - Minimalist Black & White */}
+
         <div className="p-6 border-b border-zinc-100 flex items-center justify-between bg-white">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-full bg-zinc-100 text-zinc-900 flex items-center justify-center">
@@ -148,7 +145,6 @@ export const NotificationDrawer: React.FC<NotificationDrawerProps> = ({
           </button>
         </div>
 
-        {/* Notifications Body List - Minimalist Black & White, Separated by lines */}
         <div className="flex-1 overflow-y-auto px-6 divide-y divide-zinc-100">
           {portalNotifs.length === 0 ? (
             <div className="text-center py-24 space-y-2">
@@ -201,7 +197,6 @@ export const NotificationDrawer: React.FC<NotificationDrawerProps> = ({
           )}
         </div>
 
-        {/* Footer with Actions */}
         <div className="p-6 border-t border-zinc-100 bg-white space-y-3">
           <div className="flex items-center gap-2">
             <button

@@ -81,7 +81,6 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
     currentUser?.id === 'user-customer-1' ||
     currentUser?.email?.endsWith('@lastplate.demo');
 
-  // Address edit state
   const [deliveryAddress, setDeliveryAddress] = useState(
     currentUser?.customerProfile?.defaultAddress ||
       (isDemoCustomer
@@ -101,7 +100,6 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
     setTempAddress(defaultAddr);
   }, [currentUser, isDemoCustomer]);
 
-  // Checkout & Payment modal state
   const [showCheckoutModal, setShowCheckoutModal] = useState(false);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'UPI' | 'CARD' | 'COD'>('UPI');
   const [upiMethodType, setUpiMethodType] = useState<'APP' | 'ID' | 'QR'>('APP');
@@ -114,17 +112,13 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
   const [selectedTip, setSelectedTip] = useState<number>(20);
   const [orderNotes, setOrderNotes] = useState('');
 
-  // Payment execution state
   const [paymentPhase, setPaymentPhase] = useState<'IDLE' | 'PROCESSING' | 'SUCCESS'>('IDLE');
 
-  // Active tracking order modal state
   const [trackingOrderId, setTrackingOrderId] = useState<string | null>(null);
   const [isAutoSimulating, setIsAutoSimulating] = useState(false);
 
-  // Cart total items count
   const cartItemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
-  // Animated cart bump state when items are added
   const [isCartBumping, setIsCartBumping] = useState(false);
   const prevCountRef = useRef(cartItemCount);
   useEffect(() => {
@@ -136,13 +130,11 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
     prevCountRef.current = cartItemCount;
   }, [cartItemCount]);
 
-  // Dynamic Surplus Price Simulator state
   const [simMinutesLeft, setSimMinutesLeft] = useState(30);
   const [simUnsoldPortions, setSimUnsoldPortions] = useState(6);
   const simOriginalPrice = 380;
   const simFloorPrice = 160;
 
-  // Calculate simulated dynamic price
   const simTimeProgress = Math.min(1, Math.max(0, (240 - simMinutesLeft) / 240));
   const simTimeDecay = Math.pow(simTimeProgress, 1.25);
   const simQtyRatio = simUnsoldPortions / 10;
@@ -155,7 +147,6 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
 
   const trackingOrder = orders.find((o) => o.id === trackingOrderId) || null;
 
-  // Add into notifications menu drawer instead of top-right popup
   const triggerNotification = (title: string, msg: string) => {
     addNotification({
       title,
@@ -165,7 +156,6 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
     });
   };
 
-  // Auto-simulation timer for tracking
   useEffect(() => {
     if (!isAutoSimulating || !trackingOrder || trackingOrder.orderStatus === 'DELIVERED') {
       if (trackingOrder?.orderStatus === 'DELIVERED') setIsAutoSimulating(false);
@@ -180,7 +170,6 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
     return () => clearInterval(timer);
   }, [isAutoSimulating, trackingOrder, advanceOrderSimulation]);
 
-  // Timer tick for live dynamic surplus prices (checked every 10s to prevent unnecessary renders)
   const [, setTick] = useState(Date.now());
   useEffect(() => {
     const interval = setInterval(() => setTick(Date.now()), 10000);
@@ -189,7 +178,6 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
 
   const categories: string[] = ['All', 'Rolls & Wraps', 'Bowls & Thalis', 'Chaat & Cafe Bites', 'Brews & Desserts'];
 
-  // Chef Special Dish: Paneer Lababdar
   const chefSpecialDish = useMemo(() => {
     return menuItems.find((m) => m.name.toLowerCase().includes('lababdar')) || menuItems[0];
   }, [menuItems]);
@@ -199,7 +187,6 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
     return cart.find((c) => c.menuItemId === chefSpecialDish.id && !c.isSurplus) || null;
   }, [chefSpecialDish, cart]);
 
-  // Filter menu items
   const filteredMenuItems = menuItems.filter((item) => {
     const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.description.toLowerCase().includes(searchQuery.toLowerCase());
@@ -208,7 +195,6 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
     return matchesSearch && matchesCategory && matchesVeg;
   });
 
-  // Filter surplus listings
   const activeSurplusListings = surplusListings.filter((item) => {
     const isAvail = item.status === 'AVAILABLE' && item.quantityAvailable > 0;
     if (!isAvail) return false;
@@ -217,7 +203,6 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
       (item.prepTimeInfo && item.prepTimeInfo.toLowerCase().includes(searchQuery.toLowerCase()));
   });
 
-  // Customer's orders
   const customerOrders = orders.filter((o) => {
     const isMine = isDemoCustomer
       ? (o.customerId === currentUser?.id || o.customerId === 'user-customer-1')
@@ -239,8 +224,7 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
 
   const handleExecuteCheckout = () => {
     setPaymentPhase('PROCESSING');
-    
-    // Smooth, realistic payment progression
+
     setTimeout(() => {
       setPaymentPhase('SUCCESS');
       setTimeout(() => {
@@ -277,11 +261,10 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 pb-32">
-      
-      {/* VIEW 1: MENU & REGULAR ORDERING */}
+
       {activeTab === 'menu' && (
         <div className="space-y-8">
-          {/* Restaurant Showcase Hero Card */}
+
           <div className="bg-white rounded-3xl border border-slate-200 overflow-hidden">
             <div className="relative h-48 sm:h-64 bg-slate-900">
               <img
@@ -291,7 +274,7 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
                 referrerPolicy="no-referrer"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/40 to-transparent" />
-              
+
               <div className="absolute bottom-6 left-6 right-6 flex flex-col sm:flex-row sm:items-end justify-between gap-4 text-white">
                 <div>
                   <div className="flex items-center gap-2 mb-1.5 flex-wrap">
@@ -330,7 +313,6 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
               </div>
             </div>
 
-            {/* Address & Quick Stats Bar */}
             <div className="px-6 py-4 bg-slate-50/70 border-t border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs text-slate-600">
               <div className="flex items-center gap-2">
                 <MapPin className="w-4 h-4 text-[#18181B] shrink-0" />
@@ -392,7 +374,6 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
             </div>
           </div>
 
-          {/* Full Restaurant Menu Section */}
           <div className="space-y-6">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div>
@@ -405,7 +386,7 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
               </div>
 
               <div className="flex items-center gap-3">
-                {/* Veg Only Filter Toggle */}
+
                 <button
                   type="button"
                   onClick={() => setVegOnly(!vegOnly)}
@@ -425,11 +406,10 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
               </div>
             </div>
 
-            {/* Category Filter Navigation Bar */}
             <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
               {categories.map((cat) => {
-                const count = cat === 'All' 
-                  ? menuItems.length 
+                const count = cat === 'All'
+                  ? menuItems.length
                   : menuItems.filter(m => m.category === cat).length;
                 const isSelected = selectedCategory === cat;
                 return (
@@ -454,7 +434,6 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
               })}
             </div>
 
-            {/* FEATURED CHEF SPECIAL RECIPE CARD */}
             {selectedCategory === 'All' && !searchQuery && chefSpecialDish && (
               <div className="bg-white rounded-3xl border border-slate-200 overflow-hidden grid grid-cols-1 md:grid-cols-12 items-stretch relative mt-3 mb-8 sm:mb-10">
                 <div
@@ -503,7 +482,6 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
                     {chefSpecialDish.description}
                   </p>
 
-                  {/* Nutrients & Health Strip - all same color background */}
                   <div className="grid grid-cols-4 gap-2 pt-1 text-xs">
                     <div className="p-2 rounded-xl bg-[#1B4332]/5 border border-[#1B4332]/15 text-center">
                       <span className="text-[10px] text-slate-500 block font-medium">Protein</span>
@@ -523,7 +501,6 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
                     </div>
                   </div>
 
-                  {/* Featured Ingredients & Portions (Title case) */}
                   <div className="space-y-1.5 pt-1">
                     <span className="text-[11px] font-bold tracking-wider text-slate-500 block font-heading">
                       Featured Ingredients & Portions
@@ -597,7 +574,6 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
               </div>
             )}
 
-            {/* Menu Items Grid */}
             {filteredMenuItems.length === 0 ? (
               <div className="bg-white rounded-3xl p-12 text-center border border-slate-200 space-y-3">
                 <Search className="w-8 h-8 text-slate-300 mx-auto" />
@@ -725,7 +701,6 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
         </div>
       )}
 
-      {/* VIEW 2: SURPLUS FOOD RESCUE MARKETPLACE */}
       {activeTab === 'surplus' && (
         <div className="space-y-8">
           <div className="space-y-6">
@@ -754,7 +729,6 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
               </div>
             </div>
 
-            {/* Surplus Listing Cards Carousel */}
             {activeSurplusListings.length === 0 ? (
               <div className="bg-white rounded-2xl p-8 text-center border border-slate-200/60 text-slate-500 text-xs">
                 All surplus rescue portions for this shift have been claimed! Check back at 08:30 PM.
@@ -810,7 +784,6 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
                             {listing.prepTimeInfo || 'Chef-packaged tamper-proof box ready for immediate rescue & dispatch.'}
                           </p>
 
-                          {/* Dynamic price decay visual indicator */}
                           <div className="mt-2 pt-1 p-2.5 rounded-xl bg-[#1B4332]/5 border border-[#1B4332]/15 text-[11px] text-[#1B4332] space-y-1">
                             <div className="flex justify-between font-medium">
                               <span className="text-zinc-700">Original: ₹{listing.originalPrice}</span>
@@ -893,7 +866,6 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
         </div>
       )}
 
-      {/* VIEW 3: MY ORDERS & TRACKING */}
       {activeTab === 'orders' && (
         <div className="space-y-6">
           <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -1020,7 +992,6 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
         </div>
       )}
 
-      {/* VIEW 4: RESCUE IMPACT */}
       {activeTab === 'impact' && (
         <div className="space-y-6">
           <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 space-y-2">
@@ -1098,7 +1069,6 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
         </div>
       )}
 
-      {/* STICKY FLOATING BASKET ACTION BAR (Smooth appear without down-to-up motion) */}
       <AnimatePresence>
         {cart.length > 0 && !isCartOpen && (
           <motion.div
@@ -1132,11 +1102,10 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
         )}
       </AnimatePresence>
 
-      {/* CART SLIDE-OVER DRAWER WITH SMOOTH ANIMATION */}
       <AnimatePresence>
         {isCartOpen && (
           <div className="fixed inset-0 z-50 overflow-hidden flex justify-end">
-            {/* Backdrop */}
+
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -1146,7 +1115,6 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
               className="fixed inset-0 bg-black/40 backdrop-blur-md cursor-pointer"
             />
 
-            {/* Slide drawer */}
             <motion.div
               initial={{ x: '100%' }}
               animate={{ x: 0 }}
@@ -1155,7 +1123,7 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
               onClick={(e) => e.stopPropagation()}
               className="relative w-full max-w-md bg-white h-full flex flex-col justify-between shadow-2xl z-10 cursor-default"
             >
-              {/* Cart Header: White background with black text and icon */}
+
               <div className="p-6 border-b border-zinc-100 flex items-center justify-between bg-white">
                 <div className="flex items-center gap-2.5">
                   <ShoppingBag className="w-5 h-5 text-black" />
@@ -1174,7 +1142,6 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
                 </button>
               </div>
 
-              {/* Cart Items List - Minimalist Black & White separated by lines */}
               <div className="flex-1 overflow-y-auto px-6 py-4 bg-white">
                 {cart.length === 0 ? (
                   <div className="h-full flex flex-col items-center justify-center text-center space-y-3 text-zinc-400 py-16">
@@ -1247,7 +1214,6 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
                       </div>
                     ))}
 
-                    {/* Delivery Location Preview */}
                     <div className="pt-4 text-xs space-y-1">
                       <div className="flex items-center gap-1.5 text-zinc-800 font-semibold">
                         <MapPin className="w-3.5 h-3.5 text-zinc-900" />
@@ -1296,7 +1262,6 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
         )}
       </AnimatePresence>
 
-      {/* FULL-FEATURED REAL-TIME PAYMENT & CHECKOUT MODAL (Horizontal Landscaped Layout) */}
       <AnimatePresence>
         {showCheckoutModal && (
           <div
@@ -1314,7 +1279,7 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
               className="p-2 sm:p-3 rounded-[36px] bg-white/50 backdrop-blur-sm max-w-4xl w-full cursor-default my-auto"
             >
               <div className="bg-white rounded-3xl w-full border border-zinc-200 max-h-[84vh] flex flex-col overflow-hidden">
-            {/* Top Bar with sleek Black & White styling */}
+
             <div className="px-6 py-4 border-b border-zinc-100 flex items-center justify-between bg-white shrink-0">
               <div>
                 <h3 className="text-base font-extrabold text-zinc-900 font-heading">Complete Payment & Order</h3>
@@ -1332,9 +1297,8 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
               </button>
             </div>
 
-            {/* Landscape 2-Column Body */}
             <div className="p-6 overflow-y-auto grid grid-cols-1 md:grid-cols-12 gap-6 flex-1">
-              {/* Left Column (md:col-span-7): Payment Rails & Active Sub-Interface */}
+
               <div className="md:col-span-7 space-y-4">
                 <label className="text-xs font-bold text-slate-700 block">
                   Select Payment Rail:
@@ -1381,7 +1345,6 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
                   </button>
                 </div>
 
-                {/* PAYMENT SUB-INTERFACE: UPI */}
                 {selectedPaymentMethod === 'UPI' && (
                   <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3.5">
                     <div className="flex gap-2">
@@ -1520,7 +1483,6 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
                   </div>
                 )}
 
-                {/* PAYMENT SUB-INTERFACE: CARD */}
                 {selectedPaymentMethod === 'CARD' && (
                   <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
                     <div>
@@ -1573,7 +1535,6 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
                   </div>
                 )}
 
-                {/* PAYMENT SUB-INTERFACE: COD */}
                 {selectedPaymentMethod === 'COD' && (
                   <div className="p-4 rounded-2xl bg-[#1B4332]/5 border border-[#1B4332]/20 text-xs text-[#1B4332] space-y-1.5">
                     <div className="flex items-center gap-2 font-bold text-[#1B4332]">
@@ -1587,10 +1548,9 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
                 )}
               </div>
 
-              {/* Right Column (md:col-span-5): Tip, Delivery Notes, Breakdown & Pay Button */}
               <div className="md:col-span-5 space-y-4 flex flex-col justify-between">
                 <div className="space-y-3.5">
-                  {/* Tip Delivery Partner */}
+
                   <div className="space-y-1.5">
                     <span className="text-xs font-semibold text-slate-700 block">
                       Tip Delivery Partner (100% to rider):
@@ -1613,7 +1573,6 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
                     </div>
                   </div>
 
-                  {/* Delivery Instructions */}
                   <div>
                     <label className="text-xs font-semibold text-slate-700 mb-1 block">
                       Delivery Instructions:
@@ -1627,7 +1586,6 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
                     />
                   </div>
 
-                  {/* Bill Breakdown Summary */}
                   <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100 text-xs space-y-1.5">
                     <div className="flex justify-between text-slate-600 text-[11px]">
                       <span>Dishes Subtotal</span>
@@ -1656,7 +1614,6 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
                   </div>
                 </div>
 
-                {/* Pay Button with Progress State */}
                 <button
                   type="button"
                   onClick={handleExecuteCheckout}
@@ -1688,7 +1645,6 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
         )}
       </AnimatePresence>
 
-      {/* LIVE ORDER PROGRESS TRACKER MODAL */}
       <AnimatePresence>
         {trackingOrder && (
           <div
@@ -1707,7 +1663,7 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
               className="p-2 sm:p-3 rounded-[36px] bg-white/50 backdrop-blur-sm max-w-4xl sm:max-w-5xl w-full cursor-default my-auto"
             >
               <div className="bg-white rounded-3xl w-full max-h-[82vh] overflow-hidden border border-slate-200 flex flex-col">
-            {/* Top Bar - Black & White Sleek Header */}
+
             <div className="px-6 py-3.5 border-b border-slate-200 flex items-center justify-between bg-white text-black shrink-0">
               <div className="flex items-center gap-3">
                 <div>
@@ -1735,11 +1691,10 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
               </button>
             </div>
 
-            {/* Landscaped 2-Column Body */}
             <div className="flex-1 overflow-y-auto grid grid-cols-1 md:grid-cols-12 divide-y md:divide-y-0 md:divide-x divide-slate-100">
-              {/* Left Column (7 cols): Stepper & Driver Card */}
+
               <div className="md:col-span-7 p-6 space-y-4">
-                {/* Stepper Visualization */}
+
                 <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100">
                   <div className="flex items-center justify-between text-xs font-bold text-slate-800 mb-2">
                     <span>Current Stage:</span>
@@ -1748,7 +1703,6 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
                     </span>
                   </div>
 
-                  {/* Progress Bar */}
                   <div className="w-full bg-slate-200 h-2.5 rounded-full overflow-hidden">
                     <div
                       className="bg-[#1B4332] h-full transition-[width] duration-500 ease-out"
@@ -1762,7 +1716,6 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
                   </div>
                 </div>
 
-                {/* Real-Time Interactive Controls */}
                 {trackingOrder.orderStatus !== 'DELIVERED' && trackingOrder.orderStatus !== 'REJECTED' && (
                   <div className="p-4 rounded-2xl bg-[#1B4332] text-white space-y-2.5 text-xs">
                     <div className="flex items-center justify-between">
@@ -1771,7 +1724,7 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
                       </span>
                       <span className="text-[10px] text-white/70 font-medium">Stage Testing</span>
                     </div>
-                    
+
                     <div className="flex items-center gap-2">
                       <button
                         type="button"
@@ -1783,7 +1736,7 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
                       >
                         <ChevronRight className="w-3.5 h-3.5 text-[#1B4332]" /> Advance Next Stage
                       </button>
-                      
+
                       <button
                         type="button"
                         onClick={() => setIsAutoSimulating(!isAutoSimulating)}
@@ -1802,7 +1755,6 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
                   </div>
                 )}
 
-                {/* Delivery Driver Callout Card */}
                 <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/90 space-y-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
@@ -1819,7 +1771,6 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
                       </div>
                     </div>
 
-                    {/* Call & Chat Buttons */}
                     <div className="flex items-center gap-1.5">
                       <button
                         type="button"
@@ -1840,7 +1791,6 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
                     </div>
                   </div>
 
-                  {/* Delivery Partner Status Bubble */}
                   <div className="relative p-3 rounded-2xl bg-white border border-slate-200/80 text-xs text-slate-700 font-medium">
                     <p>
                       {trackingOrder.orderStatus === 'DELIVERED'
@@ -1849,7 +1799,6 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
                     </p>
                   </div>
 
-                  {/* Status & Estimated Time Bar */}
                   <div className="grid grid-cols-2 gap-2 pt-1 text-xs">
                     <div className="p-2.5 rounded-xl bg-white border border-slate-200/80">
                       <span className="text-[10px] text-slate-400 font-bold uppercase block">Courier Status</span>
@@ -1869,7 +1818,6 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
                 </div>
               </div>
 
-              {/* Right Column (5 cols): Order Items Breakdown & Summary */}
               <div className="md:col-span-5 p-6 bg-slate-50/50 flex flex-col justify-between space-y-4">
                 <div className="space-y-3">
                   <div className="flex items-center justify-between pb-2 border-b border-slate-200">
@@ -1893,7 +1841,6 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
                     ))}
                   </div>
 
-                  {/* Delivery Location */}
                   <div className="p-3 rounded-2xl bg-white border border-slate-200/80 text-xs space-y-1">
                     <span className="text-[10px] text-slate-400 font-bold uppercase block">Delivery Destination</span>
                     <p className="font-bold text-slate-800 line-clamp-2">{trackingOrder.deliveryAddress}</p>
@@ -1920,7 +1867,6 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
       )}
     </AnimatePresence>
 
-      {/* Dish & Recipe Detail Modal (Image 5 Inspired) */}
       <DishDetailModal
         dish={selectedDishForDetail}
         onClose={() => setSelectedDishForDetail(null)}

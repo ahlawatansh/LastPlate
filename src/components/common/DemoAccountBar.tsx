@@ -78,7 +78,7 @@ export const DemoAccountBar: React.FC<DemoAccountBarProps> = ({ onOpenAuth, onLo
 
   return (
     <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 max-w-fit flex items-center gap-2">
-      {/* 4 Portals Container: Clean border, no shadow drop */}
+
       <div className="bg-white rounded-full border border-slate-200/90 p-1 flex items-center justify-center gap-1 flex-nowrap whitespace-nowrap h-11 relative">
         {accounts.map((acc) => {
           const isActive = isDemoAccount && currentUser?.role === acc.role;
@@ -107,7 +107,6 @@ export const DemoAccountBar: React.FC<DemoAccountBarProps> = ({ onOpenAuth, onLo
         })}
       </div>
 
-      {/* Login or Logout Button */}
       {isRealUserLoggedIn ? (
         <button
           onClick={handleLogoutClick}

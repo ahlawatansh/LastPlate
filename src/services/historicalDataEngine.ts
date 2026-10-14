@@ -16,9 +16,8 @@ export interface IndianFestivalEvent {
   description: string;
 }
 
-// Major Indian Festivals across 2023, 2024, 2025, 2026
 export const INDIAN_FESTIVALS: IndianFestivalEvent[] = [
-  // 2023
+
   { name: 'Republic Day', year: 2023, month: 1, day: 26, categoryMultiplier: { 'Bowls & Thalis': 1.3, 'Chaat & Cafe Bites': 1.4 }, mealPeriodSurge: ['LUNCH', 'EVENING'], description: 'National holiday family lunch surge' },
   { name: 'Holi Festival', year: 2023, month: 3, day: 8, categoryMultiplier: { 'Chaat & Cafe Bites': 1.5, 'Brews & Desserts': 1.6 }, mealPeriodSurge: ['LUNCH', 'EVENING'], description: 'Festive street food and dessert gatherings' },
   { name: 'Eid al-Fitr', year: 2023, month: 4, day: 22, categoryMultiplier: { 'Rolls & Wraps': 1.4, 'Brews & Desserts': 1.5 }, mealPeriodSurge: ['EVENING', 'DINNER'], description: 'Festive feast and evening celebration' },
@@ -28,7 +27,6 @@ export const INDIAN_FESTIVALS: IndianFestivalEvent[] = [
   { name: 'Diwali Grand Lights', year: 2023, month: 11, day: 12, categoryMultiplier: { 'Brews & Desserts': 1.8, 'Rolls & Wraps': 1.35, 'Bowls & Thalis': 1.4 }, mealPeriodSurge: ['EVENING', 'DINNER'], description: 'Peak annual festival dinner & gift orders' },
   { name: "New Year's Eve", year: 2023, month: 12, day: 31, categoryMultiplier: { 'Rolls & Wraps': 1.6, 'Chaat & Cafe Bites': 1.5 }, mealPeriodSurge: ['EVENING', 'DINNER'], description: 'Late-night party delivery peak' },
 
-  // 2024
   { name: 'Republic Day', year: 2024, month: 1, day: 26, categoryMultiplier: { 'Bowls & Thalis': 1.3, 'Chaat & Cafe Bites': 1.4 }, mealPeriodSurge: ['LUNCH', 'EVENING'], description: 'National holiday lunch orders' },
   { name: 'Holi Festival', year: 2024, month: 3, day: 25, categoryMultiplier: { 'Chaat & Cafe Bites': 1.5, 'Brews & Desserts': 1.65 }, mealPeriodSurge: ['LUNCH', 'EVENING'], description: 'Color festival snack frenzy' },
   { name: 'Eid al-Fitr', year: 2024, month: 4, day: 11, categoryMultiplier: { 'Rolls & Wraps': 1.4, 'Brews & Desserts': 1.45 }, mealPeriodSurge: ['EVENING', 'DINNER'], description: 'Festive feasts' },
@@ -38,7 +36,6 @@ export const INDIAN_FESTIVALS: IndianFestivalEvent[] = [
   { name: 'Diwali Grand Lights', year: 2024, month: 11, day: 1, categoryMultiplier: { 'Brews & Desserts': 1.85, 'Rolls & Wraps': 1.4, 'Bowls & Thalis': 1.45 }, mealPeriodSurge: ['EVENING', 'DINNER'], description: 'Massive festive dinner and dessert rush' },
   { name: "New Year's Eve", year: 2024, month: 12, day: 31, categoryMultiplier: { 'Rolls & Wraps': 1.65, 'Chaat & Cafe Bites': 1.55 }, mealPeriodSurge: ['EVENING', 'DINNER'], description: 'Party snacks & rolls peak' },
 
-  // 2025
   { name: 'Republic Day', year: 2025, month: 1, day: 26, categoryMultiplier: { 'Bowls & Thalis': 1.3, 'Chaat & Cafe Bites': 1.4 }, mealPeriodSurge: ['LUNCH', 'EVENING'], description: 'National holiday weekend' },
   { name: 'Holi Festival', year: 2025, month: 3, day: 14, categoryMultiplier: { 'Chaat & Cafe Bites': 1.5, 'Brews & Desserts': 1.6 }, mealPeriodSurge: ['LUNCH', 'EVENING'], description: 'Holi celebration snacks' },
   { name: 'Eid al-Fitr', year: 2025, month: 3, day: 31, categoryMultiplier: { 'Rolls & Wraps': 1.4, 'Brews & Desserts': 1.5 }, mealPeriodSurge: ['EVENING', 'DINNER'], description: 'Festive treats' },
@@ -48,7 +45,6 @@ export const INDIAN_FESTIVALS: IndianFestivalEvent[] = [
   { name: 'Diwali Grand Lights', year: 2025, month: 10, day: 20, categoryMultiplier: { 'Brews & Desserts': 1.9, 'Rolls & Wraps': 1.4, 'Bowls & Thalis': 1.5 }, mealPeriodSurge: ['EVENING', 'DINNER'], description: 'Annual peak dining and dessert gifting' },
   { name: "New Year's Eve", year: 2025, month: 12, day: 31, categoryMultiplier: { 'Rolls & Wraps': 1.7, 'Chaat & Cafe Bites': 1.6 }, mealPeriodSurge: ['EVENING', 'DINNER'], description: 'New year eve countdown dinner rush' },
 
-  // 2026
   { name: 'Republic Day', year: 2026, month: 1, day: 26, categoryMultiplier: { 'Bowls & Thalis': 1.3, 'Chaat & Cafe Bites': 1.4 }, mealPeriodSurge: ['LUNCH', 'EVENING'], description: 'Holiday family brunch & lunch' },
   { name: 'Holi Festival', year: 2026, month: 3, day: 4, categoryMultiplier: { 'Chaat & Cafe Bites': 1.55, 'Brews & Desserts': 1.65 }, mealPeriodSurge: ['LUNCH', 'EVENING'], description: 'Holi street snacks surge' },
 ];
@@ -68,7 +64,6 @@ export const DEMO_MENU_ITEMS = [
   { id: 'item-12', name: 'Warm Chocolate Gulab Jamun Fondant', category: 'Brews & Desserts' as MenuCategory, basePrice: 165, baseDailyDemand: 30, prepTime: 10, isVeg: true },
 ];
 
-// Deterministic Pseudo-Random Generator (LCG)
 class PRNG {
   private s: number;
   constructor(seed: number = 42) {
@@ -83,17 +78,12 @@ class PRNG {
   }
 }
 
-/**
- * Generates 3 full years of daily sales records (2023 - 2025/2026)
- * with seasonality, meal periods, weekend spikes, festival elasticity,
- * preparation vs sales numbers, and surplus rescued records.
- */
 export function generate3YearHistoricalDataset(): HistoricalDailyRecord[] {
   const records: HistoricalDailyRecord[] = [];
   const rng = new PRNG(20230101);
 
   const startDate = new Date(2023, 0, 1);
-  const totalDays = 1095; // 3 complete years (365 * 3)
+  const totalDays = 1095;
 
   const mealPeriods: ('BREAKFAST' | 'LUNCH' | 'EVENING' | 'DINNER')[] = [
     'BREAKFAST',
@@ -102,7 +92,6 @@ export function generate3YearHistoricalDataset(): HistoricalDailyRecord[] {
     'DINNER',
   ];
 
-  // Meal period distributions per category
   const mealDistribution: Record<MenuCategory, Record<'BREAKFAST' | 'LUNCH' | 'EVENING' | 'DINNER', number>> = {
     'Rolls & Wraps': { BREAKFAST: 0.1, LUNCH: 0.35, EVENING: 0.25, DINNER: 0.3 },
     'Bowls & Thalis': { BREAKFAST: 0.05, LUNCH: 0.5, EVENING: 0.1, DINNER: 0.35 },
@@ -130,32 +119,26 @@ export function generate3YearHistoricalDataset(): HistoricalDailyRecord[] {
     const dayOfWeek = dayNames[currentDate.getDay()];
     const isWeekend = dayOfWeek === 'Friday' || dayOfWeek === 'Saturday' || dayOfWeek === 'Sunday';
 
-    // Season determination
     let season: 'Winter' | 'Spring' | 'Summer' | 'Monsoon' | 'Autumn' = 'Winter';
     if (month >= 3 && month <= 4) season = 'Spring';
     else if (month >= 5 && month <= 6) season = 'Summer';
     else if (month >= 7 && month <= 9) season = 'Monsoon';
     else if (month >= 10 && month <= 11) season = 'Autumn';
 
-    // Festival check
     const festival = INDIAN_FESTIVALS.find(
       (f) => f.year === year && f.month === month && f.day === day
     );
 
-    // Date string YYYY-MM-DD
     const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 
-    // Sample across menu items and meal periods
-    // To keep performance snappy in the browser (~10,000 dense rows), generate aggregate entries
     for (const item of DEMO_MENU_ITEMS) {
       for (const meal of mealPeriods) {
-        // Base demand portion
+
         const mealFraction = mealDistribution[item.category][meal];
-        if (mealFraction < 0.08) continue; // Skip near-zero periods like thalis at breakfast
+        if (mealFraction < 0.08) continue;
 
         let demand = item.baseDailyDemand * mealFraction;
 
-        // Weekend surge (+20% to +35% for dinner/evening)
         if (isWeekend) {
           if (meal === 'DINNER' || meal === 'EVENING') {
             demand *= 1.28 + rng.range(-0.05, 0.05);
@@ -164,16 +147,14 @@ export function generate3YearHistoricalDataset(): HistoricalDailyRecord[] {
           }
         }
 
-        // Seasonal effect
         if (season === 'Monsoon' && item.category === 'Chaat & Cafe Bites') {
-          demand *= 1.25; // Chai and pakora/chaat cravings during monsoon
+          demand *= 1.25;
         } else if (season === 'Winter' && (item.id === 'item-4' || item.id === 'item-10')) {
-          demand *= 1.2; // Dal makhani & hot chai in winter
+          demand *= 1.2;
         } else if (season === 'Summer' && item.category === 'Chaat & Cafe Bites') {
-          demand *= 1.12; // Refreshing dahi puri & chaat
+          demand *= 1.12;
         }
 
-        // Festival surge
         let festivalName: string | undefined = undefined;
         if (festival) {
           festivalName = festival.name;
@@ -183,23 +164,19 @@ export function generate3YearHistoricalDataset(): HistoricalDailyRecord[] {
           }
         }
 
-        // Year-over-year organic growth (+5% per year)
         const yearGrowth = 1.0 + (year - 2023) * 0.06;
         demand *= yearGrowth;
 
-        // Add realistic daily noise (-10% to +10%)
         demand *= rng.range(0.9, 1.1);
 
         const expectedSold = Math.max(1, Math.round(demand));
-        
-        // Kitchen preparation decision (Chef usually prepares +10% to +20% safety margin)
+
         const prepBuffer = rng.range(1.08, 1.22);
         const prepared = Math.max(expectedSold, Math.round(expectedSold * prepBuffer));
 
         const actualSold = Math.min(prepared, expectedSold);
         const unsold = prepared - actualSold;
 
-        // Surplus rescue conversion: ~60% of unsold food is rescued via LastPlate at evening/closing
         const rescued = (meal === 'DINNER' || meal === 'EVENING') && unsold > 0
           ? Math.round(unsold * rng.range(0.5, 0.8))
           : 0;
@@ -235,13 +212,9 @@ export function generate3YearHistoricalDataset(): HistoricalDailyRecord[] {
   return records;
 }
 
-/**
- * Calculates predictive forecasts for a given target date and meal period
- * by querying historical distributions and applying baseline + festival models.
- */
 export function calculateSuggestedForecast(
   history: HistoricalDailyRecord[],
-  targetDate: string, // YYYY-MM-DD
+  targetDate: string,
   mealPeriod: 'BREAKFAST' | 'LUNCH' | 'EVENING' | 'DINNER',
   scenarioParams: WhatIfScenarioParameters = {
     demandMultiplier: 1.0,
@@ -271,7 +244,6 @@ export function calculateSuggestedForecast(
   const targetDOW = dayNames[targetDateObj.getDay()];
   const isWeekend = targetDOW === 'Friday' || targetDOW === 'Saturday' || targetDOW === 'Sunday';
 
-  // Check festival for target date
   const targetFestival = INDIAN_FESTIVALS.find(
     (f) => f.month === tMonth && f.day === tDay
   );
@@ -279,27 +251,23 @@ export function calculateSuggestedForecast(
   const predictions: ForecastPrediction[] = [];
 
   for (const item of DEMO_MENU_ITEMS) {
-    // 1. Gather historical records for this item, meal period, and matching day of week
+
     const matchingRecords = history.filter(
       (r) => r.menuItemId === item.id && r.mealPeriod === mealPeriod
     );
 
     if (matchingRecords.length === 0) continue;
 
-    // Same day of week records
     const dowRecords = matchingRecords.filter((r) => r.dayOfWeek === targetDOW);
     const avgDowSold =
       dowRecords.reduce((sum, r) => sum + r.soldQty, 0) / Math.max(1, dowRecords.length);
 
-    // Overall baseline
     const overallAvgSold =
       matchingRecords.reduce((sum, r) => sum + r.soldQty, 0) / matchingRecords.length;
 
-    // Day of week delta
     const dowDelta = avgDowSold - overallAvgSold;
     const weekdayDeltaPercent = Math.round((dowDelta / overallAvgSold) * 100);
 
-    // Festival delta calculation
     let festivalMultiplier = 1.0;
     let festivalDeltaPercent = 0;
     const reasons: string[] = [];
@@ -323,7 +291,6 @@ export function calculateSuggestedForecast(
       );
     }
 
-    // Recent trend (compare 2025 vs 2023)
     const recentYearRecords = matchingRecords.filter((r) => r.year >= 2025);
     const olderYearRecords = matchingRecords.filter((r) => r.year === 2023);
     const recentAvg =
@@ -337,11 +304,9 @@ export function calculateSuggestedForecast(
       reasons.push(`Trend Momentum: Steady +${recentTrendDeltaPercent}% YoY popularity gain in recent dining cycles.`);
     }
 
-    // Core predicted demand calculation
     let predictedDemand =
       avgDowSold * festivalMultiplier * trendGrowth * scenarioParams.demandMultiplier;
 
-    // Price elasticity effect: if price adjusted, demand responds (-1.2 price elasticity)
     if (scenarioParams.priceAdjustmentPercent !== 0) {
       const priceElasticity = -1.15;
       const demandElasticityImpact = 1 + (scenarioParams.priceAdjustmentPercent / 100) * priceElasticity;
@@ -353,11 +318,9 @@ export function calculateSuggestedForecast(
 
     const roundedDemand = Math.max(1, Math.round(predictedDemand));
 
-    // Safety buffer & prep optimization
     const bufferUnits = Math.ceil(roundedDemand * (scenarioParams.safetyBufferPercent / 100));
     const suggestedPrep = roundedDemand + bufferUnits;
 
-    // Surplus risk analysis
     let surplusRisk: 'LOW' | 'MEDIUM' | 'HIGH' = 'LOW';
     if (scenarioParams.safetyBufferPercent > 20 || (!targetFestival && !isWeekend && bufferUnits > 8)) {
       surplusRisk = 'HIGH';
@@ -366,12 +329,10 @@ export function calculateSuggestedForecast(
       surplusRisk = 'MEDIUM';
     }
 
-    // Adjusted price
     const adjustedUnitPrice = Math.round(
       item.basePrice * (1 + scenarioParams.priceAdjustmentPercent / 100)
     );
 
-    // Confidence score based on historical data volume & variance
     const varianceRatio = Math.min(
       0.95,
       0.75 + matchingRecords.length / 5000 + (targetFestival ? 0.05 : 0.1)
@@ -387,11 +348,11 @@ export function calculateSuggestedForecast(
       expectedDemand: roundedDemand,
       suggestedPrepQty: suggestedPrep,
       safetyBufferQty: bufferUnits,
-      currentPreparedStock: Math.round(suggestedPrep * 0.4), // Sample initial prep on screen
+      currentPreparedStock: Math.round(suggestedPrep * 0.4),
       surplusRisk,
       confidenceScore,
       expectedRevenueInr: roundedDemand * adjustedUnitPrice,
-      expectedWasteUnits: Math.max(0, bufferUnits - Math.round(bufferUnits * 0.6)), // after surplus rescue
+      expectedWasteUnits: Math.max(0, bufferUnits - Math.round(bufferUnits * 0.6)),
       keyDrivers: reasons,
       baselineAvgDemand: Math.round(overallAvgSold),
       weekdayDeltaPercent,
@@ -403,12 +364,6 @@ export function calculateSuggestedForecast(
   return predictions;
 }
 
-/**
- * Evaluates the forecasting accuracy across a chronological holdout split.
- * Training: 2023 - 2024 (730 days)
- * Test Holdout: 2025 (365 days)
- * Computes MAE, WAPE, and benchmark improvement vs. naive rolling baseline.
- */
 export function evaluateForecastAccuracy(history: HistoricalDailyRecord[]): ModelAccuracyEvaluation {
   const trainSet = history.filter((r) => r.year <= 2024);
   const testSet = history.filter((r) => r.year === 2025);
@@ -426,7 +381,6 @@ export function evaluateForecastAccuracy(history: HistoricalDailyRecord[]): Mode
     };
   }
 
-  // Compute naive baseline mean for each item & meal period on train set
   const naiveBaselineMap = new Map<string, number>();
   for (const r of trainSet) {
     const key = `${r.menuItemId}_${r.mealPeriod}`;
@@ -444,7 +398,6 @@ export function evaluateForecastAccuracy(history: HistoricalDailyRecord[]): Mode
     const key = `${r.menuItemId}_${r.mealPeriod}`;
     const baselinePrediction = (naiveBaselineMap.get(key) || 20) / 730;
 
-    // Hybrid prediction includes day of week & festival elasticity
     const dowSurge = r.isWeekend ? 1.25 : 0.95;
     const festSurge = r.festivalName ? 1.4 : 1.0;
     const modelPrediction = baselinePrediction * dowSurge * festSurge * 1.08;
