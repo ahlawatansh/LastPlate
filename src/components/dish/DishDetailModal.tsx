@@ -351,8 +351,6 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({ dish, onClose 
     }
   }, [dish?.id, dish?.name]);
 
-  if (!dish) return null;
-
   const handleAddComment = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newComment.trim()) return;
@@ -376,20 +374,26 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({ dish, onClose 
   };
 
   return (
-    <div
-      onClick={onClose}
-      className="fixed inset-0 z-50 bg-black/40 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 overflow-y-auto cursor-pointer"
-    >
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95, y: 12 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.95, y: 12 }}
-        transition={{ type: 'spring', damping: 28, stiffness: 350 }}
-        onClick={(e) => e.stopPropagation()}
-        className="p-2 sm:p-3 rounded-[36px] bg-white/50 backdrop-blur-sm max-w-5xl sm:max-w-6xl w-full cursor-default my-auto"
-      >
-        <div className="bg-white rounded-3xl w-full max-h-[82vh] overflow-hidden border border-slate-200 flex flex-col">
-
+    <AnimatePresence>
+      {dish && (
+        <motion.div
+          key="dish-modal-backdrop"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.18 }}
+          onClick={onClose}
+          className="fixed inset-0 z-50 bg-black/40 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 overflow-y-auto cursor-pointer"
+        >
+          <motion.div
+            key={dish.id}
+            initial={{ opacity: 0, scale: 0.95, y: 12 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 12 }}
+            transition={{ type: 'spring', damping: 28, stiffness: 350 }}
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white rounded-3xl w-full max-w-5xl sm:max-w-6xl max-h-[82vh] overflow-hidden border border-slate-200 shadow-2xl flex flex-col cursor-default my-auto"
+          >
         <div className="px-6 py-3.5 border-b border-slate-200 flex items-center justify-between bg-white text-black shrink-0">
           <div className="flex items-center gap-3">
             <button
@@ -529,9 +533,9 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({ dish, onClose 
                   { name: 'Desi Ghee', qty: '15ml' },
                   { name: 'Kashmiri Spices', qty: '10g' },
                   { name: 'Lemon & Chaat', qty: '1/2 pc' },
-                ].map((ing, idx) => (
+                ].map((ing) => (
                   <div
-                    key={idx}
+                    key={ing.name}
                     className="p-3 rounded-2xl bg-white border border-slate-200 text-center flex flex-col items-center justify-center"
                   >
                     <span className="text-[10px] text-slate-500 font-semibold line-clamp-1">{ing.name}</span>
@@ -662,8 +666,9 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({ dish, onClose 
             </form>
           </div>
         </div>
-      </div>
       </motion.div>
-    </div>
+    </motion.div>
+      )}
+    </AnimatePresence>
   );
 };

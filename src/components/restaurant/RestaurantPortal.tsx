@@ -37,7 +37,6 @@ import {
   calculateSuggestedForecast,
   INDIAN_FESTIVALS,
 } from '../../services/historicalDataEngine';
-import { ScheduleCalendarView } from '../calendar/ScheduleCalendarView';
 
 interface RestaurantPortalProps {
   activeTab: string;
@@ -312,7 +311,7 @@ export const RestaurantPortal: React.FC<RestaurantPortalProps> = ({
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 pb-28">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 sm:pt-5 pb-28 space-y-8">
 
       <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
@@ -349,12 +348,6 @@ export const RestaurantPortal: React.FC<RestaurantPortalProps> = ({
           </div>
         </div>
       </div>
-
-      {(activeTab === 'schedule' || activeTab === 'calendar') && (
-        <div className="space-y-6">
-          <ScheduleCalendarView mode="RESTAURANT" />
-        </div>
-      )}
 
       {activeTab === 'kitchen' && (
         <div className="space-y-6">
@@ -421,7 +414,7 @@ export const RestaurantPortal: React.FC<RestaurantPortalProps> = ({
 
                     <div className="text-xs text-slate-700 space-y-1">
                       {ord.items.map((i, idx) => (
-                        <div key={idx} className="flex justify-between">
+                        <div key={i.surplusListingId ? `surplus-${i.surplusListingId}` : `item-${i.menuItemId}-${idx}`} className="flex justify-between">
                           <span>{i.quantity}x {i.name}</span>
                           <span className="text-slate-400 font-medium">₹{i.price * i.quantity}</span>
                         </div>
@@ -478,7 +471,7 @@ export const RestaurantPortal: React.FC<RestaurantPortalProps> = ({
 
                     <div className="text-xs text-slate-700 space-y-1">
                       {ord.items.map((i, idx) => (
-                        <div key={idx} className="flex justify-between">
+                        <div key={i.surplusListingId ? `surplus-${i.surplusListingId}` : `item-${i.menuItemId}-${idx}`} className="flex justify-between">
                           <span>{i.quantity}x {i.name}</span>
                           <span className="text-slate-400 font-medium">₹{i.price * i.quantity}</span>
                         </div>
@@ -543,7 +536,7 @@ export const RestaurantPortal: React.FC<RestaurantPortalProps> = ({
                           <span>Rider: <strong>{ord.deliveryPartnerName}</strong> ({ord.deliveryPartnerVehicle})</span>
                         </div>
                       ) : (
-                        <div className="text-[#1B4332] bg-[#1B4332]/10 p-2.5 rounded-2xl text-[11px] font-medium">
+                        <div className="flex items-center justify-center text-center text-[#1B4332] bg-[#1B4332]/10 p-2.5 rounded-2xl text-[11px] font-medium w-full">
                           Available in Delivery Pool · Waiting for partner acceptance
                         </div>
                       )}
@@ -1098,7 +1091,12 @@ export const RestaurantPortal: React.FC<RestaurantPortalProps> = ({
 
       <AnimatePresence>
         {showAddMenuModal && (
-          <div
+          <motion.div
+            key="add-menu-backdrop"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.18 }}
             onClick={() => setShowAddMenuModal(false)}
             className="fixed inset-0 z-50 bg-black/40 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 overflow-y-auto cursor-pointer"
           >
@@ -1108,10 +1106,8 @@ export const RestaurantPortal: React.FC<RestaurantPortalProps> = ({
               exit={{ opacity: 0, scale: 0.95, y: 12 }}
               transition={{ type: 'spring', damping: 28, stiffness: 350 }}
               onClick={(e) => e.stopPropagation()}
-              className="p-2 sm:p-3 rounded-[36px] bg-white/50 backdrop-blur-sm max-w-2xl w-full cursor-default my-auto"
+              className="bg-white rounded-3xl w-full max-w-2xl max-h-[82vh] overflow-hidden border border-slate-200 shadow-2xl flex flex-col cursor-default my-auto"
             >
-              <div className="bg-white rounded-3xl w-full max-h-[82vh] overflow-hidden border border-slate-200 flex flex-col">
-
                 <div className="px-6 py-3.5 border-b border-slate-200 flex items-center justify-between bg-white text-black shrink-0">
                 <div className="flex items-center gap-3">
                   <div>
@@ -1206,9 +1202,8 @@ export const RestaurantPortal: React.FC<RestaurantPortalProps> = ({
                   </button>
                 </div>
               </form>
-              </div>
             </motion.div>
-          </div>
+          </motion.div>
         )}
       </AnimatePresence>
 
@@ -1219,10 +1214,9 @@ export const RestaurantPortal: React.FC<RestaurantPortalProps> = ({
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="p-2 sm:p-3 rounded-[36px] bg-white/50 backdrop-blur-sm max-w-2xl w-full cursor-default my-auto"
+            className="bg-white rounded-3xl w-full max-w-2xl max-h-[82vh] overflow-hidden border border-slate-200 shadow-2xl flex flex-col cursor-default my-auto"
           >
-            <div className="bg-white rounded-3xl w-full max-h-[82vh] overflow-hidden border border-slate-200 flex flex-col">
-              <div className="px-6 py-3.5 border-b border-slate-200 flex items-center justify-between bg-white text-black shrink-0">
+            <div className="px-6 py-3.5 border-b border-slate-200 flex items-center justify-between bg-white text-black shrink-0">
                 <div>
                   <h3 className="text-sm font-black text-black uppercase tracking-wider">Edit Menu Item</h3>
                   <p className="text-[10px] text-slate-500 font-medium">Update pricing, description, and preparation details</p>
@@ -1312,14 +1306,18 @@ export const RestaurantPortal: React.FC<RestaurantPortalProps> = ({
                   </button>
                 </div>
               </form>
-            </div>
           </div>
         </div>
       )}
 
       <AnimatePresence>
         {showAddSurplusModal && (
-          <div
+          <motion.div
+            key="add-surplus-backdrop"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.18 }}
             onClick={() => setShowAddSurplusModal(false)}
             className="fixed inset-0 z-50 bg-black/40 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 overflow-y-auto cursor-pointer"
           >
@@ -1329,10 +1327,8 @@ export const RestaurantPortal: React.FC<RestaurantPortalProps> = ({
               exit={{ opacity: 0, scale: 0.95, y: 12 }}
               transition={{ type: 'spring', damping: 28, stiffness: 350 }}
               onClick={(e) => e.stopPropagation()}
-              className="p-2 sm:p-3 rounded-[36px] bg-white/50 backdrop-blur-sm max-w-2xl w-full cursor-default my-auto"
+              className="bg-white rounded-3xl w-full max-w-2xl max-h-[82vh] overflow-hidden border border-slate-200 shadow-2xl flex flex-col cursor-default my-auto"
             >
-              <div className="bg-white rounded-3xl w-full max-h-[82vh] overflow-hidden border border-slate-200 flex flex-col">
-
                 <div className="px-6 py-3.5 border-b border-slate-200 flex items-center justify-between bg-white text-black shrink-0">
                 <div className="flex items-center gap-3">
                   <div>
@@ -1409,17 +1405,14 @@ export const RestaurantPortal: React.FC<RestaurantPortalProps> = ({
                   </button>
                 </div>
               </form>
-              </div>
             </motion.div>
-          </div>
+          </motion.div>
         )}
       </AnimatePresence>
 
       {editingSurplusListing && (
         <div onClick={() => setEditingSurplusListing(null)} className="fixed inset-0 z-50 bg-black/40 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 overflow-y-auto cursor-pointer">
-          <div onClick={(e) => e.stopPropagation()} className="p-2 sm:p-3 rounded-[36px] bg-white/50 backdrop-blur-sm max-w-2xl w-full cursor-default my-auto">
-            <div className="bg-white rounded-3xl w-full max-h-[82vh] overflow-hidden border border-slate-200 flex flex-col">
-
+          <div onClick={(e) => e.stopPropagation()} className="bg-white rounded-3xl w-full max-w-2xl max-h-[82vh] overflow-hidden border border-slate-200 shadow-2xl flex flex-col cursor-default my-auto">
             <div className="px-6 py-3.5 border-b border-slate-200 flex items-center justify-between bg-white text-black shrink-0">
               <div className="flex items-center gap-3">
                 <div>
@@ -1521,13 +1514,11 @@ export const RestaurantPortal: React.FC<RestaurantPortalProps> = ({
             </form>
           </div>
         </div>
-        </div>
       )}
 
       {rejectingOrderId && (
         <div onClick={() => setRejectingOrderId(null)} className="fixed inset-0 z-50 bg-black/40 backdrop-blur-md flex items-center justify-center p-4 cursor-pointer">
-          <div onClick={(e) => e.stopPropagation()} className="p-2 sm:p-3 rounded-[36px] bg-white/50 backdrop-blur-sm max-w-sm w-full cursor-default my-auto">
-            <div className="bg-white rounded-3xl w-full p-6 border border-slate-200">
+          <div onClick={(e) => e.stopPropagation()} className="bg-white rounded-3xl w-full max-w-sm p-6 border border-slate-200 shadow-2xl cursor-default my-auto">
             <h3 className="text-base font-bold text-slate-900 mb-2 font-heading">Decline Order</h3>
             <p className="text-xs text-slate-500 mb-3">
               Please provide a reason for rejecting order #{rejectingOrderId}:
@@ -1557,22 +1548,27 @@ export const RestaurantPortal: React.FC<RestaurantPortalProps> = ({
             </div>
           </div>
         </div>
-        </div>
       )}
 
       <AnimatePresence>
         {showAddOrderModal && (
-          <div onClick={() => setShowAddOrderModal(false)} className="fixed inset-0 z-50 bg-black/40 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 overflow-y-auto cursor-pointer">
+          <motion.div
+            key="add-order-backdrop"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.18 }}
+            onClick={() => setShowAddOrderModal(false)}
+            className="fixed inset-0 z-50 bg-black/40 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 overflow-y-auto cursor-pointer"
+          >
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 12 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 12 }}
               transition={{ type: 'spring', damping: 28, stiffness: 350 }}
               onClick={(e) => e.stopPropagation()}
-              className="p-2 sm:p-3 rounded-[36px] bg-white/50 backdrop-blur-sm max-w-4xl w-full cursor-default my-auto"
+              className="bg-white rounded-3xl w-full max-w-4xl max-h-[82vh] overflow-hidden border border-slate-200 shadow-2xl flex flex-col cursor-default my-auto"
             >
-              <div className="bg-white rounded-3xl w-full max-h-[82vh] overflow-hidden border border-slate-200 flex flex-col">
-
               <div className="px-6 py-3.5 border-b border-slate-200 flex items-center justify-between bg-white text-black shrink-0">
               <div className="flex items-center gap-3">
                 <div>
@@ -1795,9 +1791,8 @@ export const RestaurantPortal: React.FC<RestaurantPortalProps> = ({
                 </div>
               </div>
             </form>
-          </div>
           </motion.div>
-        </div>
+        </motion.div>
       )}
     </AnimatePresence>
 

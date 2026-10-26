@@ -146,6 +146,11 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
   );
 
   const trackingOrder = orders.find((o) => o.id === trackingOrderId) || null;
+  const trackingOrderRef = useRef(trackingOrder);
+  trackingOrderRef.current = trackingOrder;
+
+  const advanceOrderSimulationRef = useRef(advanceOrderSimulation);
+  advanceOrderSimulationRef.current = advanceOrderSimulation;
 
   const triggerNotification = (title: string, msg: string) => {
     addNotification({
@@ -157,24 +162,30 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
   };
 
   useEffect(() => {
-    if (!isAutoSimulating || !trackingOrder || trackingOrder.orderStatus === 'DELIVERED') {
-      if (trackingOrder?.orderStatus === 'DELIVERED') setIsAutoSimulating(false);
+    if (!isAutoSimulating || !trackingOrderId) return;
+
+    if (trackingOrderRef.current?.orderStatus === 'DELIVERED') {
+      setIsAutoSimulating(false);
       return;
     }
+
     const timer = setInterval(() => {
-      const next = advanceOrderSimulation(trackingOrder.id);
+      const current = trackingOrderRef.current;
+      if (!current || current.id !== trackingOrderId || current.orderStatus === 'DELIVERED') {
+        setIsAutoSimulating(false);
+        return;
+      }
+
+      const next = advanceOrderSimulationRef.current(current.id);
       if (next === 'DELIVERED') {
         setIsAutoSimulating(false);
       }
     }, 3500);
-    return () => clearInterval(timer);
-  }, [isAutoSimulating, trackingOrder, advanceOrderSimulation]);
 
-  const [, setTick] = useState(Date.now());
-  useEffect(() => {
-    const interval = setInterval(() => setTick(Date.now()), 10000);
-    return () => clearInterval(interval);
-  }, []);
+    return () => {
+      clearInterval(timer);
+    };
+  }, [isAutoSimulating, trackingOrderId]);
 
   const categories: string[] = ['All', 'Rolls & Wraps', 'Bowls & Thalis', 'Chaat & Cafe Bites', 'Brews & Desserts'];
 
@@ -218,6 +229,15 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
   const deliveryFee = 35;
   const payableGrandTotal = cartTotal + deliveryFee + selectedTip;
 
+  const checkoutTimersRef = useRef<number[]>([]);
+
+  useEffect(() => {
+    return () => {
+      checkoutTimersRef.current.forEach((t) => clearTimeout(t));
+      checkoutTimersRef.current = [];
+    };
+  }, []);
+
   const handleAddItemToCart = (item: MenuItem | SurplusListing, isSurplus = false) => {
     addToCart(item, isSurplus);
   };
@@ -225,15 +245,14 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
   const handleExecuteCheckout = () => {
     setPaymentPhase('PROCESSING');
 
-    setTimeout(() => {
+    const t1 = window.setTimeout(() => {
       setPaymentPhase('SUCCESS');
-      setTimeout(() => {
+      const t2 = window.setTimeout(() => {
         const fullNotes = [orderNotes, selectedTip > 0 ? `Driver Tip Included: ₹${selectedTip}` : '']
           .filter(Boolean)
           .join(' | ');
 
         const created = placeOrder(selectedPaymentMethod, deliveryAddress, fullNotes);
-        setPaymentPhase('IDLE');
         setShowCheckoutModal(false);
         setIsCartOpen(false);
 
@@ -241,8 +260,15 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
           setTrackingOrderId(created.id);
           triggerNotification('Order Placed', `Order #${created.id} confirmed! Dispatched to Kitchen.`);
         }
+
+        const t3 = window.setTimeout(() => {
+          setPaymentPhase('IDLE');
+        }, 300);
+        checkoutTimersRef.current.push(t3);
       }, 900);
+      checkoutTimersRef.current.push(t2);
     }, 1200);
+    checkoutTimersRef.current.push(t1);
   };
 
   const getStatusStepIndex = (status: OrderStatus): number => {
@@ -260,7 +286,7 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 pb-32">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 sm:pt-5 pb-32 space-y-8">
 
       {activeTab === 'menu' && (
         <div className="space-y-8">
@@ -434,146 +460,6 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
               })}
             </div>
 
-            {selectedCategory === 'All' && !searchQuery && chefSpecialDish && (
-              <div className="bg-white rounded-3xl border border-slate-200 overflow-hidden grid grid-cols-1 md:grid-cols-12 items-stretch relative mt-3 mb-8 sm:mb-10">
-                <div
-                  onClick={() => setSelectedDishForDetail(chefSpecialDish)}
-                  className="md:col-span-5 relative overflow-hidden aspect-square w-full h-full min-h-[260px] sm:min-h-[300px] bg-slate-900 group cursor-pointer"
-                >
-                  <img
-                    src={chefSpecialDish.imageUrl || 'https://images.unsplash.com/photo-1631452180519-c014fe946bc7?w=800&auto=format&fit=crop&q=80'}
-                    alt={chefSpecialDish.name}
-                    className="w-full h-full object-cover scale-105 group-hover:scale-110 transition-transform duration-500"
-                    referrerPolicy="no-referrer"
-                  />
-                  <div className="absolute top-4 left-4 flex gap-1.5">
-                    <span className="px-3 py-1 rounded-full bg-[#1B4332] text-white font-bold text-[11px] shadow-sm">
-                      Chef Special
-                    </span>
-                    <span className="px-3 py-1 rounded-full bg-white/95 backdrop-blur-xs border border-[#1B4332]/30 text-[#1B4332] font-bold text-[11px] shadow-sm">
-                      {chefSpecialDish.category}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="md:col-span-7 p-5 sm:p-6 space-y-3.5 flex flex-col justify-between">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="px-3 py-1 rounded-full bg-[#1B4332]/10 text-[#1B4332] font-bold text-xs border border-[#1B4332]/20">
-                      Main Specialty
-                    </span>
-                    <span className="px-3 py-1 rounded-full bg-slate-100 text-slate-700 font-semibold text-xs flex items-center gap-1">
-                      <Flame className="w-3.5 h-3.5 text-orange-500" />
-                      {chefSpecialDish.calories || 610} kcal
-                    </span>
-                    <span className="px-3 py-1 rounded-full bg-slate-100 text-slate-700 font-semibold text-xs flex items-center gap-1">
-                      <Clock className="w-3.5 h-3.5 text-slate-500" />
-                      {chefSpecialDish.prepTimeMinutes || 16} min
-                    </span>
-                  </div>
-
-                  <h3
-                    onClick={() => setSelectedDishForDetail(chefSpecialDish)}
-                    className="text-xl sm:text-2xl font-extrabold text-slate-900 font-heading tracking-tight hover:text-[#1B4332] transition-colors cursor-pointer"
-                  >
-                    {chefSpecialDish.name}
-                  </h3>
-
-                  <p className="text-xs sm:text-sm text-slate-600 leading-relaxed line-clamp-2">
-                    {chefSpecialDish.description}
-                  </p>
-
-                  <div className="grid grid-cols-4 gap-2 pt-1 text-xs">
-                    <div className="p-2 rounded-xl bg-[#1B4332]/5 border border-[#1B4332]/15 text-center">
-                      <span className="text-[10px] text-slate-500 block font-medium">Protein</span>
-                      <span className="font-extrabold text-[#1B4332]">32g</span>
-                    </div>
-                    <div className="p-2 rounded-xl bg-[#1B4332]/5 border border-[#1B4332]/15 text-center">
-                      <span className="text-[10px] text-slate-500 block font-medium">Carbs</span>
-                      <span className="font-extrabold text-[#1B4332]">48g</span>
-                    </div>
-                    <div className="p-2 rounded-xl bg-[#1B4332]/5 border border-[#1B4332]/15 text-center">
-                      <span className="text-[10px] text-slate-500 block font-medium">Healthy Fats</span>
-                      <span className="font-extrabold text-[#1B4332]">18g</span>
-                    </div>
-                    <div className="p-2 rounded-xl bg-[#1B4332]/5 border border-[#1B4332]/15 text-center">
-                      <span className="text-[10px] text-slate-500 block font-medium">Fiber</span>
-                      <span className="font-extrabold text-[#1B4332]">8g</span>
-                    </div>
-                  </div>
-
-                  <div className="space-y-1.5 pt-1">
-                    <span className="text-[11px] font-bold tracking-wider text-slate-500 block font-heading">
-                      Featured Ingredients & Portions
-                    </span>
-                    <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
-                      {[
-                        { name: 'Paneer (Cottage Cheese)', qty: '150g' },
-                        { name: 'Multigrain Roti', qty: '90g' },
-                        { name: 'Tomato-Onion Gravy', qty: '120g' },
-                        { name: 'Cashew & Butter', qty: '20g' },
-                        { name: 'Fresh Cream', qty: '15ml' },
-                      ].map((ing, i) => (
-                        <div key={i} className="px-3 py-1.5 rounded-xl bg-white border border-slate-200/80 text-center shrink-0">
-                          <span className="text-[10px] text-slate-400 block font-medium">{ing.name}</span>
-                          <span className="text-xs font-black text-slate-900">{ing.qty}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="pt-2 flex items-center justify-between gap-4 border-t border-slate-100">
-                    <div className="flex items-center gap-2">
-                      <span className="text-2xl font-black text-slate-900 font-heading">
-                        ₹{chefSpecialDish.price}
-                      </span>
-                      <span className="text-xs text-slate-400 font-medium">/ complete platter</span>
-                    </div>
-
-                    <div className="flex items-center gap-2.5">
-                      <button
-                        type="button"
-                        onClick={() => setSelectedDishForDetail(chefSpecialDish)}
-                        className="px-4 py-2 rounded-full bg-white border border-slate-200 text-slate-800 text-xs font-bold hover:bg-slate-50 transition-colors cursor-pointer"
-                      >
-                        Details ↗
-                      </button>
-                      {chefSpecialInCart ? (
-                        <div className="h-9 w-[96px] flex items-center justify-between bg-[#18181B] text-white rounded-full px-2 shrink-0 transition-transform">
-                          <button
-                            type="button"
-                            onClick={() => updateCartQuantity(chefSpecialInCart.id, -1)}
-                            className="w-6 h-6 rounded-full hover:bg-white/20 active:scale-90 flex items-center justify-center transition-all cursor-pointer"
-                            title="Decrease quantity"
-                          >
-                            <Minus className="w-3.5 h-3.5" />
-                          </button>
-                          <span className="text-xs font-black px-1">{chefSpecialInCart.quantity}</span>
-                          <button
-                            type="button"
-                            onClick={() => updateCartQuantity(chefSpecialInCart.id, 1)}
-                            className="w-6 h-6 rounded-full hover:bg-white/20 active:scale-90 flex items-center justify-center transition-all cursor-pointer"
-                            title="Increase quantity"
-                          >
-                            <Plus className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={() => handleAddItemToCart(chefSpecialDish, false)}
-                          className="h-9 w-[96px] rounded-full bg-[#18181B] hover:bg-black active:scale-95 text-white text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer shrink-0"
-                          title="Add to basket"
-                        >
-                          <Plus className="w-3.5 h-3.5" />
-                          <span>Add</span>
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
             {filteredMenuItems.length === 0 ? (
               <div className="bg-white rounded-3xl p-12 text-center border border-slate-200 space-y-3">
                 <Search className="w-8 h-8 text-slate-300 mx-auto" />
@@ -601,7 +487,7 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
                   return (
                     <div
                       key={item.id}
-                      className="bg-white rounded-3xl border border-slate-200 overflow-hidden transition-all flex flex-col justify-between group"
+                      className="bg-white rounded-3xl border border-slate-200 overflow-hidden transition-colors flex flex-col justify-between group"
                     >
                       <div>
                         <div
@@ -618,12 +504,18 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
                             referrerPolicy="no-referrer"
                           />
                           <div className="absolute top-3 left-3 flex gap-1.5 items-center">
-                            {item.isVeg && (
+                            {item.isVeg ? (
                               <span className="w-4.5 h-4.5 rounded-[4px] bg-white border border-emerald-600 flex items-center justify-center p-0.5" title="Pure Veg">
                                 <span className="w-2 h-2 rounded-full bg-emerald-600" />
                               </span>
+                            ) : (
+                              <span className="w-4.5 h-4.5 rounded-[4px] bg-white border border-rose-600 flex items-center justify-center p-0.5" title="Non-Vegetarian">
+                                <span className="w-2 h-2 rounded-full bg-rose-600" />
+                              </span>
                             )}
-                            <span className="px-3 py-1 rounded-full bg-white border border-emerald-500 text-emerald-700 text-[10px] font-bold">
+                            <span className={`px-2.5 py-0.5 rounded-full bg-white/95 text-[10px] font-bold shadow-xs ${
+                              item.isVeg ? 'text-emerald-700 border border-emerald-300' : 'text-rose-700 border border-rose-300'
+                            }`}>
                               {item.category}
                             </span>
                           </div>
@@ -668,7 +560,7 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
                               <button
                                 type="button"
                                 onClick={() => updateCartQuantity(inCart.id, -1)}
-                                className="w-6 h-6 rounded-full hover:bg-white/20 active:scale-90 flex items-center justify-center transition-all cursor-pointer"
+                                className="w-6 h-6 rounded-full hover:bg-white/20 active:scale-90 flex items-center justify-center transition-colors cursor-pointer"
                               >
                                 <Minus className="w-3 h-3" />
                               </button>
@@ -676,7 +568,7 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
                               <button
                                 type="button"
                                 onClick={() => updateCartQuantity(inCart.id, 1)}
-                                className="w-6 h-6 rounded-full hover:bg-white/20 active:scale-90 flex items-center justify-center transition-all cursor-pointer"
+                                className="w-6 h-6 rounded-full hover:bg-white/20 active:scale-90 flex items-center justify-center transition-colors cursor-pointer"
                               >
                                 <Plus className="w-3.5 h-3.5" />
                               </button>
@@ -685,7 +577,7 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
                             <button
                               type="button"
                               onClick={() => handleAddItemToCart(item, false)}
-                              className="h-8 w-[88px] rounded-full bg-[#18181B] hover:bg-black active:scale-95 text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shrink-0"
+                              className="h-8 w-[88px] rounded-full bg-[#18181B] hover:bg-black active:scale-95 text-white text-xs font-bold transition-colors flex items-center justify-center gap-1.5 cursor-pointer shrink-0"
                             >
                               <Plus className="w-3.5 h-3.5" /> <span>Add</span>
                             </button>
@@ -736,7 +628,7 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                 {activeSurplusListings.map((listing) => {
-                  const livePrice = calculateLiveSurplusPrice(listing);
+                  const livePrice = listing.currentPrice ?? calculateLiveSurplusPrice(listing);
                   const discountPercent = Math.round(
                     ((listing.originalPrice - livePrice) / listing.originalPrice) * 100
                   );
@@ -747,7 +639,7 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
                   return (
                     <div
                       key={listing.id}
-                      className="bg-white rounded-3xl border border-slate-200 overflow-hidden transition-all flex flex-col justify-between group"
+                      className="bg-white rounded-3xl border border-slate-200 overflow-hidden transition-colors flex flex-col justify-between group"
                     >
                       <div>
                         <div className="relative h-48 bg-slate-100 overflow-hidden">
@@ -791,7 +683,7 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
                             </div>
                             <div className="w-full bg-[#1B4332]/15 h-1.5 rounded-full overflow-hidden">
                               <div
-                                className="bg-[#1B4332] h-full transition-all duration-300"
+                                className="bg-[#1B4332] h-full transition-[width] duration-300 ease-out"
                                 style={{
                                   width: `${Math.min(100, Math.max(15, 100 - discountPercent))}%`,
                                 }}
@@ -825,7 +717,7 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
                               <button
                                 type="button"
                                 onClick={() => updateCartQuantity(inCart.id, -1)}
-                                className="w-6 h-6 rounded-full hover:bg-white/20 active:scale-90 flex items-center justify-center transition-all cursor-pointer"
+                                className="w-6 h-6 rounded-full hover:bg-white/20 active:scale-90 flex items-center justify-center transition-colors cursor-pointer"
                                 title="Decrease quantity"
                               >
                                 <Minus className="w-3 h-3" />
@@ -835,7 +727,7 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
                                 type="button"
                                 disabled={inCart.quantity >= listing.quantityAvailable}
                                 onClick={() => updateCartQuantity(inCart.id, 1)}
-                                className="w-6 h-6 rounded-full hover:bg-white/20 active:scale-90 flex items-center justify-center transition-all cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                                className="w-6 h-6 rounded-full hover:bg-white/20 active:scale-90 flex items-center justify-center transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
                                 title={
                                   inCart.quantity >= listing.quantityAvailable
                                     ? 'Maximum available portions reached'
@@ -849,7 +741,7 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
                             <button
                               type="button"
                               onClick={() => handleAddItemToCart(listing, true)}
-                              className="h-8 px-4 rounded-full bg-[#18181B] hover:bg-black active:scale-95 text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shrink-0"
+                              className="h-8 px-4 rounded-full bg-[#18181B] hover:bg-black active:scale-95 text-white text-xs font-bold transition-colors flex items-center justify-center gap-1.5 cursor-pointer shrink-0"
                             >
                               <Plus className="w-3.5 h-3.5" />
                               <span>Rescue Meal</span>
@@ -959,7 +851,7 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
                       <span className="text-[9px] text-slate-400 font-bold uppercase block tracking-wider">Dishes Ordered</span>
                       <div className="space-y-0.5">
                         {ord.items.map((i, idx) => (
-                          <div key={idx} className="flex justify-between text-slate-700 leading-snug">
+                          <div key={i.surplusListingId ? `surplus-${i.surplusListingId}` : `item-${i.menuItemId}-${idx}`} className="flex justify-between text-slate-700 leading-snug">
                             <span>{i.quantity}x {i.name}</span>
                             <span className="font-semibold text-slate-900">₹{i.price * i.quantity}</span>
                           </div>
@@ -1104,13 +996,15 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
 
       <AnimatePresence>
         {isCartOpen && (
-          <div className="fixed inset-0 z-50 overflow-hidden flex justify-end">
-
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
+          <motion.div
+            key="cart-portal-backdrop"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 z-50 overflow-hidden flex justify-end"
+          >
+            <div
               onClick={() => setIsCartOpen(false)}
               className="fixed inset-0 bg-black/40 backdrop-blur-md cursor-pointer"
             />
@@ -1258,13 +1152,18 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
                 </div>
               )}
             </motion.div>
-          </div>
+          </motion.div>
         )}
       </AnimatePresence>
 
       <AnimatePresence>
         {showCheckoutModal && (
-          <div
+          <motion.div
+            key="checkout-backdrop"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.18 }}
             onClick={() => {
               if (paymentPhase === 'IDLE') setShowCheckoutModal(false);
             }}
@@ -1276,10 +1175,8 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
               exit={{ opacity: 0, scale: 0.95, y: 12 }}
               transition={{ type: 'spring', damping: 28, stiffness: 350 }}
               onClick={(e) => e.stopPropagation()}
-              className="p-2 sm:p-3 rounded-[36px] bg-white/50 backdrop-blur-sm max-w-4xl w-full cursor-default my-auto"
+              className="bg-white rounded-3xl w-full max-w-4xl border border-zinc-200 max-h-[84vh] flex flex-col overflow-hidden shadow-2xl cursor-default my-auto"
             >
-              <div className="bg-white rounded-3xl w-full border border-zinc-200 max-h-[84vh] flex flex-col overflow-hidden">
-
             <div className="px-6 py-4 border-b border-zinc-100 flex items-center justify-between bg-white shrink-0">
               <div>
                 <h3 className="text-base font-extrabold text-zinc-900 font-heading">Complete Payment & Order</h3>
@@ -1639,15 +1536,19 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
                 </button>
               </div>
             </div>
-              </div>
-            </motion.div>
-          </div>
+          </motion.div>
+        </motion.div>
         )}
       </AnimatePresence>
 
       <AnimatePresence>
         {trackingOrder && (
-          <div
+          <motion.div
+            key="tracking-modal-backdrop"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.18 }}
             onClick={() => {
               setTrackingOrderId(null);
               setIsAutoSimulating(false);
@@ -1660,10 +1561,8 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
               exit={{ opacity: 0, scale: 0.95, y: 12 }}
               transition={{ type: 'spring', damping: 28, stiffness: 350 }}
               onClick={(e) => e.stopPropagation()}
-              className="p-2 sm:p-3 rounded-[36px] bg-white/50 backdrop-blur-sm max-w-4xl sm:max-w-5xl w-full cursor-default my-auto"
+              className="bg-white rounded-3xl w-full max-w-4xl sm:max-w-5xl max-h-[82vh] overflow-hidden border border-slate-200 shadow-2xl flex flex-col cursor-default my-auto"
             >
-              <div className="bg-white rounded-3xl w-full max-h-[82vh] overflow-hidden border border-slate-200 flex flex-col">
-
             <div className="px-6 py-3.5 border-b border-slate-200 flex items-center justify-between bg-white text-black shrink-0">
               <div className="flex items-center gap-3">
                 <div>
@@ -1763,10 +1662,14 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
                       </div>
                       <div>
                         <span className="font-extrabold text-slate-900 block font-heading text-xs">
-                          Delivery Partner Assigned
+                          {trackingOrder.deliveryPartnerName
+                            ? `Partner: ${trackingOrder.deliveryPartnerName}`
+                            : 'Delivery Partner Assigned'}
                         </span>
                         <span className="text-[11px] text-slate-500 font-medium">
-                          Verified Eco-Fleet Courier · GPS Live Connected
+                          {trackingOrder.deliveryPartnerVehicle
+                            ? `${trackingOrder.deliveryPartnerVehicle} · GPS Live Connected`
+                            : 'Verified Eco-Fleet Courier · GPS Live Connected'}
                         </span>
                       </div>
                     </div>
@@ -1831,7 +1734,7 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
 
                   <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1">
                     {trackingOrder.items.map((i, idx) => (
-                      <div key={idx} className="flex justify-between items-center p-2 rounded-xl bg-white border border-slate-200/80 text-xs">
+                      <div key={i.surplusListingId ? `surplus-${i.surplusListingId}` : `item-${i.menuItemId}-${idx}`} className="flex justify-between items-center p-2 rounded-xl bg-white border border-slate-200/80 text-xs">
                         <span className="font-medium text-slate-700">
                           <strong className="text-slate-900 font-extrabold mr-1">{i.quantity}x</strong>
                           {i.name}
@@ -1861,9 +1764,8 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
                 </div>
               </div>
             </div>
-          </div>
           </motion.div>
-        </div>
+        </motion.div>
       )}
     </AnimatePresence>
 

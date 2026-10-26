@@ -5,7 +5,7 @@ import { useApp } from '../../context/AppContext';
 import { UserRole } from '../../types';
 
 interface DemoAccountBarProps {
-  onOpenAuth?: () => void;
+  onOpenAuth?: (role?: UserRole) => void;
   onLogout?: () => void;
 }
 
@@ -44,17 +44,83 @@ export const DemoAccountBar: React.FC<DemoAccountBarProps> = ({ onOpenAuth, onLo
     },
   ];
 
+  const isRealCustomer = Boolean(
+    currentUser &&
+    currentUser.role === 'CUSTOMER' &&
+    !currentUser.email?.endsWith('@lastplate.demo') &&
+    currentUser.id !== 'user-customer-1'
+  );
+
+  const isRealDelivery = Boolean(
+    currentUser &&
+    currentUser.role === 'DELIVERY' &&
+    !currentUser.email?.endsWith('@lastplate.demo') &&
+    currentUser.id !== 'user-delivery-1'
+  );
+
   const isDemoAccount = Boolean(
     currentUser && (
-      currentUser.id === 'user-customer-1' ||
       currentUser.id === 'user-restaurant-1' ||
-      currentUser.id === 'user-delivery-1' ||
       currentUser.id === 'user-admin-1' ||
-      currentUser.email?.endsWith('@lastplate.demo')
+      (currentUser.role === 'RESTAURANT' && currentUser.email?.endsWith('@lastplate.demo')) ||
+      (currentUser.role === 'ADMIN' && currentUser.email?.endsWith('@lastplate.demo'))
     )
   );
 
-  const isRealUserLoggedIn = Boolean(currentUser && !isDemoAccount);
+  const isRealUserLoggedIn = Boolean(
+    currentUser && (
+      isRealCustomer ||
+      isRealDelivery ||
+      currentUser.role === 'CUSTOMER' ||
+      currentUser.role === 'DELIVERY'
+    )
+  );
+
+  const handleAccountClick = (role: UserRole) => {
+    if (role === 'CUSTOMER') {
+      if (currentUser?.role === 'CUSTOMER') {
+        return;
+      }
+      if (onOpenAuth) onOpenAuth('CUSTOMER');
+      return;
+    }
+
+    if (role === 'DELIVERY') {
+      if (currentUser?.role === 'DELIVERY') {
+        return;
+      }
+      if (onOpenAuth) onOpenAuth('DELIVERY');
+      return;
+    }
+
+    quickLoginDemo(role);
+  };
+
+  const isRoleActive = (role: UserRole) => {
+    if (role === 'CUSTOMER') {
+      return currentUser?.role === 'CUSTOMER';
+    }
+    if (role === 'DELIVERY') {
+      return currentUser?.role === 'DELIVERY';
+    }
+    return currentUser?.role === role && (isDemoAccount || currentUser.role === role);
+  };
+
+  const getRoleDisplayName = (role: UserRole, defaultName: string) => {
+    if (role === 'CUSTOMER') {
+      if (currentUser?.role === 'CUSTOMER') {
+        return currentUser?.name ? `Customer (${currentUser.name.split(' ')[0]})` : 'Customer';
+      }
+      return 'Customer';
+    }
+    if (role === 'DELIVERY') {
+      if (currentUser?.role === 'DELIVERY') {
+        return currentUser?.name ? `Delivery (${currentUser.name.split(' ')[0]})` : 'Delivery';
+      }
+      return 'Delivery';
+    }
+    return defaultName;
+  };
 
   const handleLoginClick = () => {
     if (onOpenAuth) {
@@ -81,17 +147,24 @@ export const DemoAccountBar: React.FC<DemoAccountBarProps> = ({ onOpenAuth, onLo
 
       <div className="bg-white rounded-full border border-slate-200/90 p-1 flex items-center justify-center gap-1 flex-nowrap whitespace-nowrap h-11 relative">
         {accounts.map((acc) => {
-          const isActive = isDemoAccount && currentUser?.role === acc.role;
+          const isActive = isRoleActive(acc.role);
+          const displayName = getRoleDisplayName(acc.role, acc.name);
           return (
             <button
               key={acc.role}
-              onClick={() => quickLoginDemo(acc.role)}
+              onClick={() => handleAccountClick(acc.role)}
               className={`relative flex items-center gap-1.5 text-xs font-bold transition-colors duration-200 border-0 cursor-pointer shrink-0 h-9 rounded-full px-4 z-10 ${
                 isActive
                   ? 'text-white'
                   : 'text-zinc-600 hover:text-black hover:bg-slate-100/70'
               }`}
-              title={`Switch to ${acc.name} (${acc.email})`}
+              title={
+                acc.role === 'CUSTOMER'
+                  ? isRealCustomer
+                    ? `Logged in as Customer: ${currentUser?.email}`
+                    : 'Customer Portal (Real account login required - click to sign in)'
+                  : `Switch to ${acc.name} (${acc.email})`
+              }
             >
               {isActive && (
                 <motion.div
@@ -101,7 +174,7 @@ export const DemoAccountBar: React.FC<DemoAccountBarProps> = ({ onOpenAuth, onLo
                 />
               )}
               {acc.icon}
-              <span>{acc.name}</span>
+              <span>{displayName}</span>
             </button>
           );
         })}

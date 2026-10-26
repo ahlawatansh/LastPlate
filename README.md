@@ -91,15 +91,40 @@ I built **LastPlate** to solve both sides of this equation:
 
 ---
 
+## Getting Started
+
+### Prerequisites
+- Node.js 20+ installed
+- npm or yarn
+
+### Installation & Run
+
+1. Clone the repository:
+```bash
+git clone https://github.com/ahlawatansh/LastPlate.git
+cd LastPlate
+```
+
+2. Install dependencies:
+```bash
+npm install
+```
+
+3. Start development server:
+```bash
+npm run dev
+```
+
+4. Open `http://localhost:5001` in your browser.
+
+> **Role Demo Switching:** Use the floating demo bar at the bottom to switch between roles (Customer, Restaurant, Delivery Partner, Admin) or test multi-browser simulations in real time.
+
+---
+
 ## Project structure
 
 ```text
 LastPlate/
-├── docs/
-│   ├── diagrams/           # StarUML architecture & package diagrams (.mdj)
-│   ├── reports/            # Assessment test & design reports (.pdf)
-│   └── scripts/            # Report generation utilities
-├── public/                 # Static assets, fonts, and web icons
 ├── screenshots/            # HD screenshots for documentation & README
 ├── src/
 │   ├── components/

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
   User,
   UserRole,
@@ -27,7 +27,7 @@ import {
   generate3YearHistoricalDataset,
   evaluateForecastAccuracy,
 } from '../services/historicalDataEngine';
-import { signOutFirebase, saveOrderToFirestore, saveSurplusToFirestore } from '../services/firebase';
+import { signOutFirebase, saveOrderToFirestore, saveSurplusToFirestore, subscribeToFirestoreOrders } from '../services/firebase';
 
 export interface CartItem {
   id: string;
@@ -57,7 +57,7 @@ interface AppContextType {
   whatIfParams: WhatIfScenarioParameters;
   setWhatIfParams: React.Dispatch<React.SetStateAction<WhatIfScenarioParameters>>;
 
-  login: (email: string) => boolean;
+  login: (email: string, roleHint?: UserRole) => boolean;
   loginWithGoogle: (email?: string, name?: string) => boolean;
   loginWithFirebaseUser: (data: { uid?: string; email: string | null; displayName: string | null; photoURL?: string | null }) => boolean;
   quickLoginDemo: (role: UserRole) => void;
@@ -168,11 +168,24 @@ const sanitizeBangaloreAddress = (addr: string): string => {
   return addr;
 };
 
+const SESSION_ID = typeof window !== 'undefined' ? Math.random().toString(36).substring(2, 9) : 'server';
+
+function safeParseArray<T>(key: string, fallback: T[]): T[] {
+  try {
+    const saved = localStorage.getItem(key);
+    if (!saved) return fallback;
+    const parsed = JSON.parse(saved);
+    return Array.isArray(parsed) ? parsed : fallback;
+  } catch (e) {
+    return fallback;
+  }
+}
+
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const isRemoteUpdateRef = useRef(false);
 
   const [users, setUsers] = useState<User[]>(() => {
-    const saved = localStorage.getItem(STORAGE_KEYS.USERS);
-    const parsed: User[] = saved ? JSON.parse(saved) : SEED_USERS;
+    const parsed = safeParseArray<User>(STORAGE_KEYS.USERS, SEED_USERS);
     return parsed.map((u) => {
       if (u.customerProfile) {
         return {
@@ -189,46 +202,45 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   });
 
   const [currentUserId, setCurrentUserId] = useState<string | null>(() => {
-    return localStorage.getItem(STORAGE_KEYS.CURRENT_USER_ID) || 'user-customer-1';
+    const saved = localStorage.getItem(STORAGE_KEYS.CURRENT_USER_ID);
+    if (!saved || saved === 'user-customer-1' || saved === 'user-delivery-1') {
+      return null;
+    }
+    return saved;
   });
 
   const [menuItems, setMenuItems] = useState<MenuItem[]>(() => {
-    const saved = localStorage.getItem(STORAGE_KEYS.MENU);
-    return saved ? JSON.parse(saved) : SEED_MENU_ITEMS;
+    return safeParseArray<MenuItem>(STORAGE_KEYS.MENU, SEED_MENU_ITEMS);
   });
 
   const [surplusListings, setSurplusListings] = useState<SurplusListing[]>(() => {
-    const saved = localStorage.getItem(STORAGE_KEYS.SURPLUS);
-    return saved ? JSON.parse(saved) : SEED_SURPLUS_LISTINGS;
+    return safeParseArray<SurplusListing>(STORAGE_KEYS.SURPLUS, SEED_SURPLUS_LISTINGS);
   });
 
   const [orders, setOrders] = useState<Order[]>(() => {
-    const saved = localStorage.getItem(STORAGE_KEYS.ORDERS);
-    const parsed: Order[] = saved ? JSON.parse(saved) : SEED_ORDERS;
+    const parsed = safeParseArray<Order>(STORAGE_KEYS.ORDERS, SEED_ORDERS);
     return parsed.map((o) => ({
       ...o,
       deliveryAddress: sanitizeBangaloreAddress(o.deliveryAddress),
     }));
   });
+  const ordersRef = useRef<Order[]>(orders);
+  ordersRef.current = orders;
 
   const [applications, setApplications] = useState<OnboardingApplication[]>(() => {
-    const saved = localStorage.getItem(STORAGE_KEYS.APPS);
-    return saved ? JSON.parse(saved) : SEED_ONBOARDING_APPLICATIONS;
+    return safeParseArray<OnboardingApplication>(STORAGE_KEYS.APPS, SEED_ONBOARDING_APPLICATIONS);
   });
 
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>(() => {
-    const saved = localStorage.getItem(STORAGE_KEYS.LOGS);
-    return saved ? JSON.parse(saved) : SEED_AUDIT_LOGS;
+    return safeParseArray<AuditLog>(STORAGE_KEYS.LOGS, SEED_AUDIT_LOGS);
   });
 
   const [notifications, setNotifications] = useState<NotificationItem[]>(() => {
-    const saved = localStorage.getItem(STORAGE_KEYS.NOTIFS);
-    return saved ? JSON.parse(saved) : SEED_NOTIFICATIONS;
+    return safeParseArray<NotificationItem>(STORAGE_KEYS.NOTIFS, SEED_NOTIFICATIONS);
   });
 
   const [cart, setCart] = useState<CartItem[]>(() => {
-    const saved = localStorage.getItem(STORAGE_KEYS.CART);
-    return saved ? JSON.parse(saved) : [];
+    return safeParseArray<CartItem>(STORAGE_KEYS.CART, []);
   });
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -252,10 +264,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [historyRecords]);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
-  }, [users]);
-
-  useEffect(() => {
     if (currentUserId) {
       localStorage.setItem(STORAGE_KEYS.CURRENT_USER_ID, currentUserId);
     } else {
@@ -267,8 +275,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
       try {
         const bc = new BroadcastChannel('lastplate_realtime_sync');
-        bc.postMessage({ type: 'SYNC_STATE', ...payload });
-        bc.close();
+        bc.postMessage({ type: 'SYNC_STATE', senderSessionId: SESSION_ID, ...payload });
+        setTimeout(() => {
+          try {
+            bc.close();
+          } catch (_) {}
+        }, 1000);
       } catch (err) {
 
       }
@@ -281,6 +293,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       bc = new BroadcastChannel('lastplate_realtime_sync');
       bc.onmessage = (event) => {
         if (event.data?.type === 'SYNC_STATE') {
+          if (event.data?.senderSessionId === SESSION_ID) return;
+          isRemoteUpdateRef.current = true;
           const { orders: o, apps: a, users: u, surplus: s, notifs: n, menu: m } = event.data;
           if (o) setOrders(o);
           if (a) setApplications(a);
@@ -294,47 +308,101 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     const handleStorage = (e: StorageEvent) => {
       if (!e.newValue) return;
+      isRemoteUpdateRef.current = true;
       try {
-        if (e.key === STORAGE_KEYS.ORDERS) setOrders(JSON.parse(e.newValue));
-        if (e.key === STORAGE_KEYS.APPS) setApplications(JSON.parse(e.newValue));
-        if (e.key === STORAGE_KEYS.USERS) setUsers(JSON.parse(e.newValue));
-        if (e.key === STORAGE_KEYS.SURPLUS) setSurplusListings(JSON.parse(e.newValue));
-        if (e.key === STORAGE_KEYS.NOTIFS) setNotifications(JSON.parse(e.newValue));
-        if (e.key === STORAGE_KEYS.MENU) setMenuItems(JSON.parse(e.newValue));
+        const parsed = JSON.parse(e.newValue);
+        if (!Array.isArray(parsed)) return;
+        if (e.key === STORAGE_KEYS.ORDERS) setOrders(parsed);
+        if (e.key === STORAGE_KEYS.APPS) setApplications(parsed);
+        if (e.key === STORAGE_KEYS.USERS) setUsers(parsed);
+        if (e.key === STORAGE_KEYS.SURPLUS) setSurplusListings(parsed);
+        if (e.key === STORAGE_KEYS.NOTIFS) setNotifications(parsed);
+        if (e.key === STORAGE_KEYS.MENU) setMenuItems(parsed);
       } catch (err) {
 
       }
     };
 
     window.addEventListener('storage', handleStorage);
+    const unsubscribeFirestore = subscribeToFirestoreOrders((remoteOrders) => {
+      if (!remoteOrders || remoteOrders.length === 0) return;
+      isRemoteUpdateRef.current = true;
+      setOrders((prev) => {
+        let changed = false;
+        const merged = [...prev];
+        for (const ro of remoteOrders) {
+          const idx = merged.findIndex((o) => o.id === ro.id);
+          if (idx >= 0) {
+            if (
+              merged[idx].orderStatus !== ro.orderStatus ||
+              merged[idx].deliveryPartnerId !== ro.deliveryPartnerId ||
+              (ro.timeline && ro.timeline.length > merged[idx].timeline.length)
+            ) {
+              merged[idx] = { ...merged[idx], ...ro };
+              changed = true;
+            }
+          } else {
+            merged.unshift(ro);
+            changed = true;
+          }
+        }
+        if (changed) {
+          ordersRef.current = merged;
+          return merged;
+        }
+        return prev;
+      });
+    });
+
     return () => {
       if (bc) bc.close();
+      if (unsubscribeFirestore) unsubscribeFirestore();
       window.removeEventListener('storage', handleStorage);
     };
   }, []);
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.MENU, JSON.stringify(menuItems));
+    if (isRemoteUpdateRef.current) {
+      isRemoteUpdateRef.current = false;
+      return;
+    }
     broadcastSync({ menu: menuItems });
   }, [menuItems, broadcastSync]);
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.SURPLUS, JSON.stringify(surplusListings));
+    if (isRemoteUpdateRef.current) {
+      isRemoteUpdateRef.current = false;
+      return;
+    }
     broadcastSync({ surplus: surplusListings });
   }, [surplusListings, broadcastSync]);
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(orders));
+    if (isRemoteUpdateRef.current) {
+      isRemoteUpdateRef.current = false;
+      return;
+    }
     broadcastSync({ orders });
   }, [orders, broadcastSync]);
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.APPS, JSON.stringify(applications));
+    if (isRemoteUpdateRef.current) {
+      isRemoteUpdateRef.current = false;
+      return;
+    }
     broadcastSync({ apps: applications });
   }, [applications, broadcastSync]);
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
+    if (isRemoteUpdateRef.current) {
+      isRemoteUpdateRef.current = false;
+      return;
+    }
     broadcastSync({ users });
   }, [users, broadcastSync]);
 
@@ -344,6 +412,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.NOTIFS, JSON.stringify(notifications));
+    if (isRemoteUpdateRef.current) {
+      isRemoteUpdateRef.current = false;
+      return;
+    }
     broadcastSync({ notifs: notifications });
   }, [notifications, broadcastSync]);
 
@@ -371,13 +443,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     [currentUser]
   );
 
-  const calculateLiveSurplusPrice = useCallback((listing: SurplusListing): number => {
-    const now = Date.now();
+  const [sharedCurrentTime, setSharedCurrentTime] = useState<number>(() => Date.now());
+
+  const computeSurplusPriceForTime = useCallback((listing: SurplusListing, now: number): number => {
     const listed = new Date(listing.listedAt).getTime();
     let close = new Date(listing.closingTime).getTime();
 
+    if (close <= listed) {
+      close = listed + 4 * 60 * 60 * 1000;
+    }
     if (close <= now) {
-      close = now + 48 * 60 * 1000;
+      return listing.minPrice;
     }
 
     const totalDuration = Math.max(1, close - listed);
@@ -388,9 +464,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const qtyRatio = Math.min(1, Math.max(0, listing.quantityAvailable / initialQty));
 
     const timeDecayFactor = Math.pow(timeProgress, 1.25);
-
     const quantityClearanceFactor = 0.70 + 0.40 * qtyRatio;
-
     const combinedDiscountFactor = Math.min(1.0, Math.max(0.15, timeDecayFactor * quantityClearanceFactor));
 
     const priceDrop = (listing.originalPrice - listing.minPrice) * combinedDiscountFactor;
@@ -399,13 +473,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return Math.max(listing.minPrice, Math.min(listing.originalPrice, Math.round(calculatedPrice)));
   }, []);
 
+  const calculateLiveSurplusPrice = useCallback((listing: SurplusListing): number => {
+    return computeSurplusPriceForTime(listing, sharedCurrentTime);
+  }, [computeSurplusPriceForTime, sharedCurrentTime]);
+
   const getSurplusPricingBreakdown = useCallback(
     (listing: SurplusListing) => {
-      const now = Date.now();
+      const now = sharedCurrentTime;
       let close = new Date(listing.closingTime).getTime();
       const listed = new Date(listing.listedAt).getTime();
-      if (close <= now) {
-        close = now + 48 * 60 * 1000;
+      if (close <= listed) {
+        close = listed + 4 * 60 * 60 * 1000;
       }
 
       const timeLeftMs = Math.max(0, close - now);
@@ -445,15 +523,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         urgencyLabel,
       };
     },
-    [calculateLiveSurplusPrice]
+    [calculateLiveSurplusPrice, sharedCurrentTime]
   );
 
   useEffect(() => {
     const timer = setInterval(() => {
+      const now = Date.now();
+      setSharedCurrentTime(now);
       setSurplusListings((prev) => {
         let changed = false;
         const updated = prev.map((item) => {
-          const newPrice = calculateLiveSurplusPrice(item);
+          const newPrice = computeSurplusPriceForTime(item, now);
           if (newPrice !== item.currentPrice) {
             changed = true;
             return {
@@ -467,14 +547,25 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       });
     }, 5000);
     return () => clearInterval(timer);
-  }, [calculateLiveSurplusPrice]);
+  }, [computeSurplusPriceForTime]);
 
   const login = useCallback(
-    (email: string): boolean => {
-      const user = users.find((u) => u.email.toLowerCase() === email.toLowerCase());
+    (email: string, roleHint?: UserRole): boolean => {
+      const normalized = email.toLowerCase().trim();
+      const user = users.find(
+        (u) =>
+          u.email.toLowerCase() === normalized ||
+          (u.role === 'DELIVERY' &&
+            (normalized === 'delivery@lastplate.in' ||
+              normalized === 'delivery@lastplate.demo' ||
+              normalized === 'rahul.delivery@lastplate.in'))
+      );
       if (user) {
         setCurrentUserId(user.id);
-        const isDemo = user.id === 'user-customer-1' || user.id === 'user-restaurant-1' || user.id === 'user-delivery-1' || user.id === 'user-admin-1' || user.email.endsWith('@lastplate.demo');
+        const isDemo =
+          user.id === 'user-customer-1' ||
+          user.id === 'user-restaurant-1' ||
+          user.id === 'user-admin-1';
         if (!isDemo) {
           setCart([]);
           localStorage.removeItem(STORAGE_KEYS.CART);
@@ -484,25 +575,36 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
 
       const namePart = email.split('@')[0].replace(/[._-]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+      const isDeliveryIntent = roleHint === 'DELIVERY' || normalized.includes('delivery') || normalized.includes('rider');
       const newUser: User = {
         id: `user-real-${Date.now()}`,
         email: email,
-        name: namePart || 'Account Holder',
-        role: 'CUSTOMER',
+        name: namePart || (isDeliveryIntent ? 'Delivery Partner' : 'Account Holder'),
+        role: isDeliveryIntent ? 'DELIVERY' : 'CUSTOMER',
         status: 'APPROVED',
         createdAt: new Date().toISOString(),
-        customerProfile: {
+        customerProfile: isDeliveryIntent ? undefined : {
           defaultAddress: '',
           savedAddresses: [],
           totalRescuedMeals: 0,
           totalSavedAmount: 0,
         },
+        deliveryProfile: isDeliveryIntent ? {
+          vehicleType: 'EV_SCOOTER',
+          vehicleNumber: 'KA-01-EQ-4421 (Ather 450X)',
+          serviceArea: 'Indiranagar & Koramangala, Bengaluru',
+          isOnline: true,
+          totalDeliveries: 12,
+          rating: 4.9,
+          earningsInr: 540,
+          drivingLicenseNo: 'DL-0420220091823',
+        } : undefined,
       };
       setUsers((prev) => [...prev, newUser]);
       setCurrentUserId(newUser.id);
       setCart([]);
       localStorage.removeItem(STORAGE_KEYS.CART);
-      addAuditLog('USER_LOGIN', `Real user account created and signed in: ${newUser.email}`);
+      addAuditLog('USER_LOGIN', `Real ${newUser.role} user account created and signed in: ${newUser.email}`);
       return true;
     },
     [users, addAuditLog]
@@ -603,6 +705,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const quickLoginDemo = useCallback(
     (role: UserRole) => {
+      if (role === 'CUSTOMER' || role === 'DELIVERY') {
+        return;
+      }
       const demoUser = users.find((u) => u.role === role && u.status === 'APPROVED');
       if (demoUser) {
         setCurrentUserId(demoUser.id);
@@ -745,7 +850,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           vehicleType: data.vehicleType,
           vehicleNumber: data.vehicleNumber,
           serviceArea: data.serviceArea,
-          isOnline: false,
+          isOnline: true,
           totalDeliveries: 0,
           rating: 5.0,
           earningsInr: 0,
@@ -770,8 +875,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         },
       };
 
-      setUsers((prev) => [...prev, newUser]);
-      setApplications((prev) => [newApp, ...prev]);
+      const nextUsers = [...users, newUser];
+      const nextApps = [newApp, ...applications];
+      setUsers(nextUsers);
+      setApplications(nextApps);
+      localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(nextUsers));
+      localStorage.setItem(STORAGE_KEYS.APPS, JSON.stringify(nextApps));
+      broadcastSync({ users: nextUsers, apps: nextApps });
       setCurrentUserId(newUser.id);
       setCart([]);
       localStorage.removeItem(STORAGE_KEYS.CART);
@@ -784,7 +894,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const addToCart = useCallback(
     (item: MenuItem | SurplusListing, isSurplus = false) => {
       const cartItemId = isSurplus ? `surplus-${item.id}` : `menu-${item.id}`;
-      const price = isSurplus ? (item as SurplusListing).currentPrice : (item as MenuItem).price;
+      const price = isSurplus ? ((item as SurplusListing).currentPrice ?? calculateLiveSurplusPrice(item as SurplusListing)) : (item as MenuItem).price;
       const origPrice = isSurplus ? (item as SurplusListing).originalPrice : undefined;
 
       setCart((prev) => {
@@ -811,7 +921,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         ];
       });
     },
-    []
+    [calculateLiveSurplusPrice]
   );
 
   const removeFromCart = useCallback((cartItemId: string) => {
@@ -1066,157 +1176,208 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const restaurantAcceptOrder = useCallback(
     (orderId: string) => {
-      setOrders((prev) =>
-        prev.map((o) => {
-          if (o.id === orderId && o.orderStatus === 'ORDER_PLACED') {
-            return {
-              ...o,
-              orderStatus: 'RESTAURANT_ACCEPTED',
-              timeline: [
-                ...o.timeline,
-                {
-                  status: 'RESTAURANT_ACCEPTED',
-                  timestamp: new Date().toISOString(),
-                  description: 'Kitchen confirmed order and entered production queue',
-                  actor: currentUser?.name || 'Restaurant',
-                },
-              ],
-            };
-          }
-          return o;
-        })
-      );
+      let updatedTarget: Order | null = null;
+      const nextOrders = ordersRef.current.map((o) => {
+        if (o.id === orderId && o.orderStatus === 'ORDER_PLACED') {
+          updatedTarget = {
+            ...o,
+            orderStatus: 'RESTAURANT_ACCEPTED',
+            timeline: [
+              ...o.timeline,
+              {
+                status: 'RESTAURANT_ACCEPTED',
+                timestamp: new Date().toISOString(),
+                description: 'Kitchen confirmed order and entered production queue',
+                actor: currentUser?.name || 'Restaurant',
+              },
+            ],
+          };
+          return updatedTarget;
+        }
+        return o;
+      });
+      ordersRef.current = nextOrders;
+      setOrders(nextOrders);
+      if (updatedTarget) saveOrderToFirestore(updatedTarget);
+      broadcastSync({ orders: nextOrders });
       addAuditLog('ORDER_ACCEPTED', `Restaurant accepted order ${orderId}`, orderId);
     },
-    [currentUser, addAuditLog]
+    [currentUser, addAuditLog, broadcastSync]
   );
 
   const restaurantRejectOrder = useCallback(
     (orderId: string, reason: string) => {
-      setOrders((prev) =>
-        prev.map((o) => {
-          if (o.id === orderId) {
-            return {
-              ...o,
-              orderStatus: 'REJECTED',
-              rejectionReason: reason,
-              timeline: [
-                ...o.timeline,
-                {
-                  status: 'REJECTED',
-                  timestamp: new Date().toISOString(),
-                  description: `Order rejected by restaurant: ${reason}`,
-                  actor: currentUser?.name || 'Restaurant',
-                },
-              ],
-            };
-          }
-          return o;
-        })
-      );
+      let updatedTarget: Order | null = null;
+      const nextOrders = ordersRef.current.map((o) => {
+        if (o.id === orderId) {
+          updatedTarget = {
+            ...o,
+            orderStatus: 'REJECTED',
+            rejectionReason: reason,
+            timeline: [
+              ...o.timeline,
+              {
+                status: 'REJECTED',
+                timestamp: new Date().toISOString(),
+                description: `Order rejected by restaurant: ${reason}`,
+                actor: currentUser?.name || 'Restaurant',
+              },
+            ],
+          };
+          return updatedTarget;
+        }
+        return o;
+      });
+      ordersRef.current = nextOrders;
+      setOrders(nextOrders);
+      if (updatedTarget) saveOrderToFirestore(updatedTarget);
+      broadcastSync({ orders: nextOrders });
       addAuditLog('ORDER_REJECTED', `Order ${orderId} rejected. Reason: ${reason}`, orderId);
     },
-    [currentUser, addAuditLog]
+    [currentUser, addAuditLog, broadcastSync]
   );
 
   const restaurantStartPrep = useCallback(
     (orderId: string) => {
-      setOrders((prev) =>
-        prev.map((o) => {
-          if (o.id === orderId) {
-            return {
-              ...o,
-              orderStatus: 'PREPARING',
-              timeline: [
-                ...o.timeline,
-                {
-                  status: 'PREPARING',
-                  timestamp: new Date().toISOString(),
-                  description: 'Chef is actively preparing dishes fresh',
-                  actor: currentUser?.name || 'Restaurant',
-                },
-              ],
-            };
-          }
-          return o;
-        })
-      );
+      let updatedTarget: Order | null = null;
+      const nextOrders = ordersRef.current.map((o) => {
+        if (o.id === orderId) {
+          updatedTarget = {
+            ...o,
+            orderStatus: 'PREPARING',
+            timeline: [
+              ...o.timeline,
+              {
+                status: 'PREPARING',
+                timestamp: new Date().toISOString(),
+                description: 'Chef is actively preparing dishes fresh',
+                actor: currentUser?.name || 'Restaurant',
+              },
+            ],
+          };
+          return updatedTarget;
+        }
+        return o;
+      });
+      ordersRef.current = nextOrders;
+      setOrders(nextOrders);
+      if (updatedTarget) saveOrderToFirestore(updatedTarget);
+      broadcastSync({ orders: nextOrders });
     },
-    [currentUser]
+    [currentUser, broadcastSync]
   );
 
   const restaurantMarkReady = useCallback(
     (orderId: string) => {
-      setOrders((prev) =>
-        prev.map((o) => {
-          if (o.id === orderId) {
-            return {
-              ...o,
-              orderStatus: 'READY_FOR_PICKUP',
-              timeline: [
-                ...o.timeline,
-                {
-                  status: 'READY_FOR_PICKUP',
-                  timestamp: new Date().toISOString(),
-                  description: 'Dishes packed in eco-friendly tamper-proof bags, waiting for delivery pickup',
-                  actor: currentUser?.name || 'Restaurant',
-                },
-              ],
-            };
-          }
-          return o;
-        })
-      );
+      let updatedTarget: Order | null = null;
+      const nextOrders = ordersRef.current.map((o) => {
+        if (o.id === orderId) {
+          updatedTarget = {
+            ...o,
+            orderStatus: 'READY_FOR_PICKUP',
+            timeline: [
+              ...o.timeline,
+              {
+                status: 'READY_FOR_PICKUP',
+                timestamp: new Date().toISOString(),
+                description: 'Dishes packed in eco-friendly tamper-proof bags, waiting for delivery pickup',
+                actor: currentUser?.name || 'Restaurant',
+              },
+            ],
+          };
+          return updatedTarget;
+        }
+        return o;
+      });
+      ordersRef.current = nextOrders;
+      setOrders(nextOrders);
+      if (updatedTarget) saveOrderToFirestore(updatedTarget);
+      broadcastSync({ orders: nextOrders });
     },
-    [currentUser]
+    [currentUser, broadcastSync]
   );
 
   const deliveryAcceptOrder = useCallback(
     (orderId: string): boolean => {
       if (!currentUser || currentUser.role !== 'DELIVERY') return false;
 
-      const targetOrder = orders.find((o) => o.id === orderId);
+      const targetOrder = ordersRef.current.find((o) => o.id === orderId);
       if (!targetOrder || targetOrder.deliveryPartnerId) {
         return false;
       }
 
-      setOrders((prev) =>
-        prev.map((o) => {
-          if (o.id === orderId && !o.deliveryPartnerId) {
-            return {
-              ...o,
-              orderStatus: 'DELIVERY_ASSIGNED',
-              deliveryPartnerId: currentUser.id,
-              deliveryPartnerName: currentUser.name,
-              deliveryPartnerPhone: currentUser.phone || '+91 99887 76655',
-              deliveryPartnerVehicle: currentUser.deliveryProfile?.vehicleNumber || 'EV Scooter',
-              timeline: [
-                ...o.timeline,
-                {
-                  status: 'DELIVERY_ASSIGNED',
-                  timestamp: new Date().toISOString(),
-                  description: `Delivery Partner ${currentUser.name} accepted delivery dispatch`,
-                  actor: currentUser.name,
-                },
-              ],
-            };
-          }
-          return o;
-        })
-      );
+      let updatedTarget: Order | null = null;
+      const nextOrders = ordersRef.current.map((o) => {
+        if (o.id === orderId && !o.deliveryPartnerId) {
+          updatedTarget = {
+            ...o,
+            orderStatus: 'DELIVERY_ASSIGNED' as OrderStatus,
+            deliveryPartnerId: currentUser.id,
+            deliveryPartnerName: currentUser.name,
+            deliveryPartnerPhone: currentUser.phone || '+91 99887 76655',
+            deliveryPartnerVehicle: currentUser.deliveryProfile?.vehicleType || currentUser.deliveryProfile?.vehicleNumber || 'EV Scooter (Ola S1 Pro)',
+            timeline: [
+              ...o.timeline,
+              {
+                status: 'DELIVERY_ASSIGNED' as OrderStatus,
+                timestamp: new Date().toISOString(),
+                description: `Delivery Partner ${currentUser.name} accepted delivery dispatch`,
+                actor: currentUser.name,
+              },
+            ],
+          };
+          return updatedTarget;
+        }
+        return o;
+      });
+
+      ordersRef.current = nextOrders;
+      setOrders(nextOrders);
+      if (updatedTarget) saveOrderToFirestore(updatedTarget);
+      broadcastSync({ orders: nextOrders });
 
       addAuditLog('DELIVERY_ASSIGNED', `Partner ${currentUser.email} accepted order ${orderId}`, orderId);
       return true;
     },
-    [currentUser, orders, addAuditLog]
+    [currentUser, addAuditLog, broadcastSync]
   );
 
   const deliveryDeclineOrder = useCallback(
     (orderId: string) => {
+      const partnerId = currentUser?.id || 'delivery-partner';
+      let updatedTarget: Order | null = null;
+      const nextOrders = ordersRef.current.map((o) => {
+        if (o.id === orderId) {
+          const declinedBy = o.declinedByDeliveryPartnerIds || [];
+          const isAssignedToMe = o.deliveryPartnerId === partnerId;
+          updatedTarget = {
+            ...o,
+            deliveryPartnerId: isAssignedToMe ? undefined : o.deliveryPartnerId,
+            orderStatus: isAssignedToMe ? ('READY_FOR_PICKUP' as OrderStatus) : o.orderStatus,
+            declinedByDeliveryPartnerIds: Array.from(new Set([...declinedBy, partnerId])),
+            timeline: [
+              ...o.timeline,
+              {
+                status: isAssignedToMe ? 'READY_FOR_PICKUP' : o.orderStatus,
+                timestamp: new Date().toISOString(),
+                description: `Delivery Partner ${currentUser?.name || 'Partner'} declined/released trip`,
+                actor: currentUser?.name || 'Delivery Partner',
+              },
+            ],
+          };
+          return updatedTarget;
+        }
+        return o;
+      });
 
-      addAuditLog('DELIVERY_DECLINED', `Partner ${currentUser?.email} declined order ${orderId}. Remains available in pool.`, orderId);
+      ordersRef.current = nextOrders;
+      setOrders(nextOrders);
+      if (updatedTarget) saveOrderToFirestore(updatedTarget);
+      broadcastSync({ orders: nextOrders });
+
+      addAuditLog('DELIVERY_DECLINED', `Partner ${currentUser?.email} declined order ${orderId}.`, orderId);
     },
-    [currentUser, addAuditLog]
+    [currentUser, addAuditLog, broadcastSync]
   );
 
   const deliveryUpdateStatus = useCallback(
@@ -1227,31 +1388,38 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         DELIVERED: 'Package successfully delivered and handed to customer',
       };
 
-      setOrders((prev) =>
-        prev.map((o) => {
-          if (o.id === orderId && o.deliveryPartnerId === currentUser?.id) {
-            return {
-              ...o,
-              orderStatus: nextStatus,
-              paymentStatus: nextStatus === 'DELIVERED' ? 'PAID' : o.paymentStatus,
-              completedAt: nextStatus === 'DELIVERED' ? new Date().toISOString() : o.completedAt,
-              timeline: [
-                ...o.timeline,
-                {
-                  status: nextStatus,
-                  timestamp: new Date().toISOString(),
-                  description: descriptions[nextStatus],
-                  actor: currentUser?.name || 'Delivery Partner',
-                },
-              ],
-            };
-          }
-          return o;
-        })
-      );
+      let updatedTarget: Order | null = null;
+      const nextOrders = ordersRef.current.map((o) => {
+        if (
+          o.id === orderId &&
+          (currentUser?.role === 'DELIVERY' || o.deliveryPartnerId === currentUser?.id || o.deliveryPartnerId === 'user-delivery-1')
+        ) {
+          updatedTarget = {
+            ...o,
+            orderStatus: nextStatus,
+            paymentStatus: nextStatus === 'DELIVERED' ? 'PAID' : o.paymentStatus,
+            completedAt: nextStatus === 'DELIVERED' ? new Date().toISOString() : o.completedAt,
+            timeline: [
+              ...o.timeline,
+              {
+                status: nextStatus,
+                timestamp: new Date().toISOString(),
+                description: descriptions[nextStatus],
+                actor: currentUser?.name || o.deliveryPartnerName || 'Delivery Partner',
+              },
+            ],
+          };
+          return updatedTarget;
+        }
+        return o;
+      });
+
+      ordersRef.current = nextOrders;
+      setOrders(nextOrders);
+      if (updatedTarget) saveOrderToFirestore(updatedTarget);
+      broadcastSync({ orders: nextOrders });
 
       if (nextStatus === 'DELIVERED') {
-
         setUsers((prev) =>
           prev.map((u) => {
             if (u.id === currentUser?.id && u.deliveryProfile) {
@@ -1269,9 +1437,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         );
       }
 
-      addAuditLog(`DELIVERY_${nextStatus}`, `Order ${orderId} marked as ${nextStatus} by ${currentUser?.email}`, orderId);
+      addAuditLog(
+        `DELIVERY_${nextStatus}`,
+        `Partner updated order ${orderId} to status: ${nextStatus}`,
+        orderId
+      );
     },
-    [currentUser, addAuditLog]
+    [currentUser, addAuditLog, broadcastSync]
   );
 
   const addMenuItem = useCallback(
@@ -1341,21 +1513,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (!app) return;
 
       const nowIso = new Date().toISOString();
-      setApplications((prev) =>
-        prev.map((a) =>
-          a.id === appId
-            ? { ...a, status: 'APPROVED', reviewedAt: nowIso, reviewedBy: currentUser?.name || 'Admin' }
-            : a
-        )
+      const nextApps = applications.map((a) =>
+        a.id === appId
+          ? { ...a, status: 'APPROVED' as const, reviewedAt: nowIso, reviewedBy: currentUser?.name || 'Admin' }
+          : a
       );
+      const nextUsers = users.map((u) => (u.id === app.userId ? { ...u, status: 'APPROVED' as const } : u));
 
-      setUsers((prev) =>
-        prev.map((u) => (u.id === app.userId ? { ...u, status: 'APPROVED' } : u))
-      );
+      setApplications(nextApps);
+      setUsers(nextUsers);
+      localStorage.setItem(STORAGE_KEYS.APPS, JSON.stringify(nextApps));
+      localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(nextUsers));
+      broadcastSync({ apps: nextApps, users: nextUsers });
 
       addAuditLog('APPLICATION_APPROVED', `Admin approved ${app.role} registration for ${app.applicantName} (${app.email}).`, appId);
     },
-    [applications, currentUser, addAuditLog]
+    [applications, users, currentUser, addAuditLog, broadcastSync]
   );
 
   const rejectApplication = useCallback(
@@ -1364,27 +1537,28 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (!app) return;
 
       const nowIso = new Date().toISOString();
-      setApplications((prev) =>
-        prev.map((a) =>
-          a.id === appId
-            ? {
-                ...a,
-                status: 'REJECTED',
-                rejectionReason: reason,
-                reviewedAt: nowIso,
-                reviewedBy: currentUser?.name || 'Admin',
-              }
-            : a
-        )
+      const nextApps = applications.map((a) =>
+        a.id === appId
+          ? {
+              ...a,
+              status: 'REJECTED' as const,
+              rejectionReason: reason,
+              reviewedAt: nowIso,
+              reviewedBy: currentUser?.name || 'Admin',
+            }
+          : a
       );
+      const nextUsers = users.map((u) => (u.id === app.userId ? { ...u, status: 'REJECTED' as const } : u));
 
-      setUsers((prev) =>
-        prev.map((u) => (u.id === app.userId ? { ...u, status: 'REJECTED' } : u))
-      );
+      setApplications(nextApps);
+      setUsers(nextUsers);
+      localStorage.setItem(STORAGE_KEYS.APPS, JSON.stringify(nextApps));
+      localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(nextUsers));
+      broadcastSync({ apps: nextApps, users: nextUsers });
 
       addAuditLog('APPLICATION_REJECTED', `Admin rejected ${app.role} application for ${app.applicantName}. Reason: ${reason}`, appId);
     },
-    [applications, currentUser, addAuditLog]
+    [applications, users, currentUser, addAuditLog, broadcastSync]
   );
 
   const resetDemoData = useCallback(() => {
@@ -1413,53 +1587,60 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const advanceOrderSimulation = useCallback(
     (orderId: string): OrderStatus | null => {
-      let nextStatus: OrderStatus | null = null;
-      setOrders((prev) =>
-        prev.map((o) => {
-          if (o.id !== orderId) return o;
+      const currentOrder = ordersRef.current.find((o) => o.id === orderId);
+      if (!currentOrder) return null;
 
-          const transitions: Record<OrderStatus, { next: OrderStatus; desc: string; actor: string }> = {
-            ORDER_PLACED: { next: 'RESTAURANT_ACCEPTED', desc: 'Kitchen accepted order and queued preparation', actor: 'Green Leaf Kitchen' },
-            RESTAURANT_ACCEPTED: { next: 'PREPARING', desc: 'Chef is cooking meal fresh in kitchen', actor: 'Green Leaf Kitchen' },
-            PREPARING: { next: 'READY_FOR_PICKUP', desc: 'Packed in eco-friendly tamper-proof bag, ready for pickup', actor: 'Green Leaf Kitchen' },
-            READY_FOR_PICKUP: { next: 'DELIVERY_ASSIGNED', desc: 'Rider Rahul Verma accepted dispatch assignment', actor: 'Rahul Verma (EV Rider)' },
-            DELIVERY_ASSIGNED: { next: 'PICKED_UP', desc: 'Rider picked up parcel from kitchen counter', actor: 'Rahul Verma (EV Rider)' },
-            PICKED_UP: { next: 'OUT_FOR_DELIVERY', desc: 'Rider en route to customer location with live GPS tracking', actor: 'Rahul Verma (EV Rider)' },
-            OUT_FOR_DELIVERY: { next: 'DELIVERED', desc: 'Order delivered and handed over to customer', actor: 'Rahul Verma (EV Rider)' },
-            DELIVERED: { next: 'DELIVERED', desc: 'Delivered', actor: 'System' },
-            REJECTED: { next: 'REJECTED', desc: 'Rejected', actor: 'System' },
-            CANCELLED: { next: 'CANCELLED', desc: 'Cancelled', actor: 'System' },
-          };
+      const transitions: Record<OrderStatus, { next: OrderStatus; desc: string; actor: string }> = {
+        ORDER_PLACED: { next: 'RESTAURANT_ACCEPTED', desc: 'Kitchen accepted order and queued preparation', actor: 'Green Leaf Kitchen' },
+        RESTAURANT_ACCEPTED: { next: 'PREPARING', desc: 'Chef is cooking meal fresh in kitchen', actor: 'Green Leaf Kitchen' },
+        PREPARING: { next: 'READY_FOR_PICKUP', desc: 'Packed in eco-friendly tamper-proof bag, ready for pickup', actor: 'Green Leaf Kitchen' },
+        READY_FOR_PICKUP: { next: 'DELIVERY_ASSIGNED', desc: 'Rider Rahul Verma accepted dispatch assignment', actor: 'Rahul Verma (EV Rider)' },
+        DELIVERY_ASSIGNED: { next: 'PICKED_UP', desc: 'Rider picked up parcel from kitchen counter', actor: 'Rahul Verma (EV Rider)' },
+        PICKED_UP: { next: 'OUT_FOR_DELIVERY', desc: 'Rider en route to customer location with live GPS tracking', actor: 'Rahul Verma (EV Rider)' },
+        OUT_FOR_DELIVERY: { next: 'DELIVERED', desc: 'Order delivered and handed over to customer', actor: 'Rahul Verma (EV Rider)' },
+        DELIVERED: { next: 'DELIVERED', desc: 'Delivered', actor: 'System' },
+        REJECTED: { next: 'REJECTED', desc: 'Rejected', actor: 'System' },
+        CANCELLED: { next: 'CANCELLED', desc: 'Cancelled', actor: 'System' },
+      };
 
-          const transition = transitions[o.orderStatus];
-          if (!transition || transition.next === o.orderStatus) return o;
+      const transition = transitions[currentOrder.orderStatus];
+      if (!transition || transition.next === currentOrder.orderStatus) return null;
 
-          nextStatus = transition.next;
-          return {
-            ...o,
-            orderStatus: transition.next,
-            deliveryPartnerId: transition.next === 'DELIVERY_ASSIGNED' || o.deliveryPartnerId ? (o.deliveryPartnerId || 'user-delivery-1') : undefined,
-            deliveryPartnerName: transition.next === 'DELIVERY_ASSIGNED' || o.deliveryPartnerName ? (o.deliveryPartnerName || 'Rahul Verma') : undefined,
-            deliveryPartnerVehicle: transition.next === 'DELIVERY_ASSIGNED' || o.deliveryPartnerVehicle ? (o.deliveryPartnerVehicle || 'KA-05-EQ-4421 (Ola S1 Pro)') : undefined,
-            deliveryPartnerPhone: transition.next === 'DELIVERY_ASSIGNED' || o.deliveryPartnerPhone ? (o.deliveryPartnerPhone || '+91 99887 76655') : undefined,
-            paymentStatus: transition.next === 'DELIVERED' ? 'PAID' : o.paymentStatus,
-            completedAt: transition.next === 'DELIVERED' ? new Date().toISOString() : o.completedAt,
-            timeline: [
-              ...o.timeline,
-              {
-                status: transition.next,
-                timestamp: new Date().toISOString(),
-                description: transition.desc,
-                actor: transition.actor,
-              },
-            ],
-          };
-        })
-      );
+      const nextStatus = transition.next;
+      const nowIso = new Date().toISOString();
+
+      const updatedOrders = ordersRef.current.map((o) => {
+        if (o.id !== orderId) return o;
+        return {
+          ...o,
+          orderStatus: nextStatus,
+          deliveryPartnerId: nextStatus === 'DELIVERY_ASSIGNED' || o.deliveryPartnerId ? (o.deliveryPartnerId || 'user-delivery-1') : undefined,
+          deliveryPartnerName: nextStatus === 'DELIVERY_ASSIGNED' || o.deliveryPartnerName ? (o.deliveryPartnerName || 'Rahul Verma') : undefined,
+          deliveryPartnerVehicle: nextStatus === 'DELIVERY_ASSIGNED' || o.deliveryPartnerVehicle ? (o.deliveryPartnerVehicle || 'KA-05-EQ-4421 (Ola S1 Pro)') : undefined,
+          deliveryPartnerPhone: nextStatus === 'DELIVERY_ASSIGNED' || o.deliveryPartnerPhone ? (o.deliveryPartnerPhone || '+91 99887 76655') : undefined,
+          paymentStatus: nextStatus === 'DELIVERED' ? 'PAID' : o.paymentStatus,
+          completedAt: nextStatus === 'DELIVERED' ? nowIso : o.completedAt,
+          timeline: [
+            ...o.timeline,
+            {
+              status: nextStatus,
+              timestamp: nowIso,
+              description: transition.desc,
+              actor: transition.actor,
+            },
+          ],
+        };
+      });
+
+      ordersRef.current = updatedOrders;
+      setOrders(updatedOrders);
+      const target = updatedOrders.find((o) => o.id === orderId);
+      if (target) saveOrderToFirestore(target);
+      broadcastSync({ orders: updatedOrders });
 
       return nextStatus;
     },
-    []
+    [broadcastSync]
   );
 
   const addNotification = useCallback(
@@ -1494,61 +1675,116 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setNotifications([]);
   }, []);
 
-  const value = {
-    currentUser,
-    users,
-    menuItems,
-    surplusListings,
-    orders,
-    applications,
-    auditLogs,
-    notifications,
-    cart,
-    searchQuery,
-    setSearchQuery,
-    historyRecords,
-    accuracyEvaluation,
-    whatIfParams,
-    setWhatIfParams,
-    login,
-    loginWithGoogle,
-    loginWithFirebaseUser,
-    quickLoginDemo,
-    logout,
-    registerCustomer,
-    registerRestaurant,
-    registerDelivery,
-    addToCart,
-    removeFromCart,
-    updateCartQuantity,
-    clearCart,
-    cartTotal,
-    cartOriginalTotal,
-    cartSavings,
-    placeOrder,
-    addRestaurantOrder,
-    restaurantAcceptOrder,
-    restaurantRejectOrder,
-    restaurantStartPrep,
-    restaurantMarkReady,
-    deliveryAcceptOrder,
-    deliveryDeclineOrder,
-    deliveryUpdateStatus,
-    addMenuItem,
-    updateMenuItem,
-    deleteMenuItem,
-    createSurplusListing,
-    updateSurplusListing,
-    approveApplication,
-    rejectApplication,
-    resetDemoData,
-    advanceOrderSimulation,
-    calculateLiveSurplusPrice,
-    getSurplusPricingBreakdown,
-    addNotification,
-    markAllNotificationsAsRead,
-    clearAllNotifications,
-  };
+  const value = useMemo(
+    () => ({
+      currentUser,
+      users,
+      menuItems,
+      surplusListings,
+      orders,
+      applications,
+      auditLogs,
+      notifications,
+      cart,
+      searchQuery,
+      setSearchQuery,
+      historyRecords,
+      accuracyEvaluation,
+      whatIfParams,
+      setWhatIfParams,
+      login,
+      loginWithGoogle,
+      loginWithFirebaseUser,
+      quickLoginDemo,
+      logout,
+      registerCustomer,
+      registerRestaurant,
+      registerDelivery,
+      addToCart,
+      removeFromCart,
+      updateCartQuantity,
+      clearCart,
+      cartTotal,
+      cartOriginalTotal,
+      cartSavings,
+      placeOrder,
+      addRestaurantOrder,
+      restaurantAcceptOrder,
+      restaurantRejectOrder,
+      restaurantStartPrep,
+      restaurantMarkReady,
+      deliveryAcceptOrder,
+      deliveryDeclineOrder,
+      deliveryUpdateStatus,
+      addMenuItem,
+      updateMenuItem,
+      deleteMenuItem,
+      createSurplusListing,
+      updateSurplusListing,
+      approveApplication,
+      rejectApplication,
+      resetDemoData,
+      advanceOrderSimulation,
+      calculateLiveSurplusPrice,
+      getSurplusPricingBreakdown,
+      addNotification,
+      markAllNotificationsAsRead,
+      clearAllNotifications,
+    }),
+    [
+      currentUser,
+      users,
+      menuItems,
+      surplusListings,
+      orders,
+      applications,
+      auditLogs,
+      notifications,
+      cart,
+      searchQuery,
+      historyRecords,
+      accuracyEvaluation,
+      whatIfParams,
+      login,
+      loginWithGoogle,
+      loginWithFirebaseUser,
+      quickLoginDemo,
+      logout,
+      registerCustomer,
+      registerRestaurant,
+      registerDelivery,
+      addToCart,
+      removeFromCart,
+      updateCartQuantity,
+      clearCart,
+      cartTotal,
+      cartOriginalTotal,
+      cartSavings,
+      placeOrder,
+      addRestaurantOrder,
+      restaurantAcceptOrder,
+      restaurantRejectOrder,
+      restaurantStartPrep,
+      restaurantMarkReady,
+      deliveryAcceptOrder,
+      deliveryDeclineOrder,
+      deliveryUpdateStatus,
+      addMenuItem,
+      updateMenuItem,
+      deleteMenuItem,
+      createSurplusListing,
+      updateSurplusListing,
+      approveApplication,
+      rejectApplication,
+      resetDemoData,
+      advanceOrderSimulation,
+      calculateLiveSurplusPrice,
+      getSurplusPricingBreakdown,
+      addNotification,
+      markAllNotificationsAsRead,
+      clearAllNotifications,
+    ]
+  );
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 };

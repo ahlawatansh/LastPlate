@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
-import { Lock, Mail, ArrowRight, Eye, EyeOff, ShieldCheck, CheckCircle2, Loader2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Lock, Mail, ArrowRight, Eye, EyeOff, ShieldCheck, CheckCircle2, Loader2, User, Bike } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { signInWithGoogleFirebase, signInWithGoogleRedirectFirebase, signInWithEmailFirebase } from '../../services/firebase';
 import { FirebaseConfigModal } from './FirebaseConfigModal';
 
 interface LoginViewProps {
+  initialRole?: 'CUSTOMER' | 'DELIVERY';
   onSwitchToSignup: () => void;
   onGoogleSignUpRequired?: (googleUser: {
     uid: string;
@@ -14,8 +15,9 @@ interface LoginViewProps {
   }) => void;
 }
 
-export const LoginView: React.FC<LoginViewProps> = ({ onSwitchToSignup, onGoogleSignUpRequired }) => {
+export const LoginView: React.FC<LoginViewProps> = ({ initialRole = 'CUSTOMER', onSwitchToSignup, onGoogleSignUpRequired }) => {
   const { users, login, loginWithFirebaseUser } = useApp();
+  const [selectedRole, setSelectedRole] = useState<'CUSTOMER' | 'DELIVERY'>(initialRole);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -23,6 +25,13 @@ export const LoginView: React.FC<LoginViewProps> = ({ onSwitchToSignup, onGoogle
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
+
+  useEffect(() => {
+    setSelectedRole(initialRole);
+    setEmail('');
+    setPassword('');
+    setError(null);
+  }, [initialRole]);
 
   const processGoogleUser = (googleUser: {
     uid: string;
@@ -57,6 +66,12 @@ export const LoginView: React.FC<LoginViewProps> = ({ onSwitchToSignup, onGoogle
       return;
     }
 
+    const existingUser = users.find((u) => u.email.toLowerCase() === email.toLowerCase());
+    if (existingUser && existingUser.role === 'RESTAURANT') {
+      setError('Restaurant partner portal is simulated with a single kitchen and managed via the bottom bar switcher.');
+      return;
+    }
+
     setIsSubmitting(true);
     try {
 
@@ -71,7 +86,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onSwitchToSignup, onGoogle
         return;
       }
 
-      const success = login(email);
+      const success = login(email, selectedRole);
       if (!success) {
         setError(fbResult.error || 'No user account found with this email. Please check your credentials or create a new account.');
       }
@@ -178,12 +193,47 @@ export const LoginView: React.FC<LoginViewProps> = ({ onSwitchToSignup, onGoogle
 
             <div className="md:col-span-7 p-6 sm:p-8 flex flex-col justify-center bg-white space-y-4">
               <div>
-                <h3 className="text-lg font-bold text-slate-900 font-heading">
-                  Sign In to Account
-                </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Enter your verified credentials to enter your workspace
-                </p>
+                <div className="flex items-center justify-between gap-3.5 flex-wrap">
+                  <h3 className="text-lg font-bold text-slate-900 font-heading">
+                    Sign In to Account
+                  </h3>
+                  <div className="inline-flex items-center gap-2.5">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedRole('CUSTOMER');
+                        setEmail('');
+                        setPassword('');
+                        setError(null);
+                      }}
+                      className={`pb-0.5 px-1 text-[10.5px] transition-colors cursor-pointer flex items-center gap-1.5 select-none ${
+                        selectedRole === 'CUSTOMER'
+                          ? 'text-slate-950 font-bold border-b-2 border-slate-950'
+                          : 'text-slate-500 font-normal hover:text-slate-800 border-b-2 border-transparent'
+                      }`}
+                    >
+                      <User className="w-3 h-3" />
+                      <span>Customer</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedRole('DELIVERY');
+                        setEmail('');
+                        setPassword('');
+                        setError(null);
+                      }}
+                      className={`pb-0.5 px-1 text-[10.5px] transition-colors cursor-pointer flex items-center gap-1.5 select-none ${
+                        selectedRole === 'DELIVERY'
+                          ? 'text-slate-950 font-bold border-b-2 border-slate-950'
+                          : 'text-slate-500 font-normal hover:text-slate-800 border-b-2 border-transparent'
+                      }`}
+                    >
+                      <Bike className="w-3 h-3" />
+                      <span>Delivery Partner</span>
+                    </button>
+                  </div>
+                </div>
               </div>
 
               {error && (
@@ -216,7 +266,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onSwitchToSignup, onGoogle
                       required
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      placeholder="name@example.com"
+                      placeholder={selectedRole === 'DELIVERY' ? '' : 'name@example.com'}
                       className="block w-full pl-10 pr-3.5 py-2.5 text-xs border border-slate-200 rounded-full focus:ring-2 focus:ring-[#1B4332] focus:border-transparent outline-none text-slate-900 placeholder:text-slate-400"
                     />
                   </div>
@@ -235,7 +285,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onSwitchToSignup, onGoogle
                       required
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      placeholder="Enter your password"
+                      placeholder={selectedRole === 'DELIVERY' ? '' : 'Enter your password'}
                       className="block w-full pl-10 pr-10 py-2.5 text-xs border border-slate-200 rounded-full focus:ring-2 focus:ring-[#1B4332] focus:border-transparent outline-none text-slate-900 placeholder:text-slate-400"
                     />
                     <button

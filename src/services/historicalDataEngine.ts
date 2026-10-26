@@ -47,21 +47,28 @@ export const INDIAN_FESTIVALS: IndianFestivalEvent[] = [
 
   { name: 'Republic Day', year: 2026, month: 1, day: 26, categoryMultiplier: { 'Bowls & Thalis': 1.3, 'Chaat & Cafe Bites': 1.4 }, mealPeriodSurge: ['LUNCH', 'EVENING'], description: 'Holiday family brunch & lunch' },
   { name: 'Holi Festival', year: 2026, month: 3, day: 4, categoryMultiplier: { 'Chaat & Cafe Bites': 1.55, 'Brews & Desserts': 1.65 }, mealPeriodSurge: ['LUNCH', 'EVENING'], description: 'Holi street snacks surge' },
+  { name: 'Eid al-Fitr', year: 2026, month: 3, day: 20, categoryMultiplier: { 'Rolls & Wraps': 1.4, 'Brews & Desserts': 1.5 }, mealPeriodSurge: ['EVENING', 'DINNER'], description: 'Festive feasts' },
+  { name: 'Independence Day', year: 2026, month: 8, day: 15, categoryMultiplier: { 'Chaat & Cafe Bites': 1.35, 'Rolls & Wraps': 1.3 }, mealPeriodSurge: ['LUNCH', 'EVENING'], description: 'National holiday orders' },
+  { name: 'Ganesh Chaturthi', year: 2026, month: 9, day: 14, categoryMultiplier: { 'Brews & Desserts': 1.65, 'Bowls & Thalis': 1.3 }, mealPeriodSurge: ['LUNCH', 'DINNER'], description: 'Traditional celebration sweets' },
+  { name: 'Sharad Navratri Feast', year: 2026, month: 10, day: 11, categoryMultiplier: { 'Bowls & Thalis': 1.55, 'Chaat & Cafe Bites': 1.4 }, mealPeriodSurge: ['LUNCH', 'DINNER'], description: 'Satvik fasting meals & pure vegetarian feast rush' },
+  { name: 'Dussehra Vijayadashami', year: 2026, month: 10, day: 20, categoryMultiplier: { 'Bowls & Thalis': 1.4, 'Rolls & Wraps': 1.3 }, mealPeriodSurge: ['LUNCH', 'DINNER'], description: 'Festive family victory feast' },
+  { name: 'Diwali Grand Lights', year: 2026, month: 11, day: 8, categoryMultiplier: { 'Brews & Desserts': 1.95, 'Rolls & Wraps': 1.45, 'Bowls & Thalis': 1.55 }, mealPeriodSurge: ['EVENING', 'DINNER'], description: 'Peak annual festival dinner & dessert gifting' },
+  { name: "New Year's Eve", year: 2026, month: 12, day: 31, categoryMultiplier: { 'Rolls & Wraps': 1.7, 'Chaat & Cafe Bites': 1.6 }, mealPeriodSurge: ['EVENING', 'DINNER'], description: 'Late-night celebration orders peak' },
 ];
 
 export const DEMO_MENU_ITEMS = [
   { id: 'item-1', name: 'Signature Paneer Tikka Kathi Roll', category: 'Rolls & Wraps' as MenuCategory, basePrice: 220, baseDailyDemand: 45, prepTime: 15, isVeg: true },
-  { id: 'item-2', name: 'Smoked Mushroom Masala Roll', category: 'Rolls & Wraps' as MenuCategory, basePrice: 210, baseDailyDemand: 32, prepTime: 15, isVeg: true },
-  { id: 'item-3', name: 'Crispy Soya Chaap Roll', category: 'Rolls & Wraps' as MenuCategory, basePrice: 195, baseDailyDemand: 38, prepTime: 12, isVeg: true },
-  { id: 'item-4', name: 'Slow-Cooked Dal Makhani & Jeera Rice Bowl', category: 'Bowls & Thalis' as MenuCategory, basePrice: 260, baseDailyDemand: 42, prepTime: 18, isVeg: true },
-  { id: 'item-5', name: 'Royal Paneer Makhani Thali', category: 'Bowls & Thalis' as MenuCategory, basePrice: 320, baseDailyDemand: 35, prepTime: 20, isVeg: true },
-  { id: 'item-6', name: 'Multigrain Desi Khichdi Comfort Bowl', category: 'Bowls & Thalis' as MenuCategory, basePrice: 210, baseDailyDemand: 26, prepTime: 15, isVeg: true },
-  { id: 'item-7', name: 'Truffle Dahi Puri (6 pcs)', category: 'Chaat & Cafe Bites' as MenuCategory, basePrice: 160, baseDailyDemand: 40, prepTime: 8, isVeg: true },
-  { id: 'item-8', name: 'Avocado Sev Papdi Chaat', category: 'Chaat & Cafe Bites' as MenuCategory, basePrice: 185, baseDailyDemand: 28, prepTime: 10, isVeg: true },
-  { id: 'item-9', name: 'Baked Cocktail Samosa Trio with Mint Dip', category: 'Chaat & Cafe Bites' as MenuCategory, basePrice: 140, baseDailyDemand: 48, prepTime: 10, isVeg: true },
-  { id: 'item-10', name: 'Special Cardamom Kulhad Chai', category: 'Brews & Desserts' as MenuCategory, basePrice: 85, baseDailyDemand: 65, prepTime: 6, isVeg: true },
-  { id: 'item-11', name: 'Kesari Rabdi Phirni Pot', category: 'Brews & Desserts' as MenuCategory, basePrice: 145, baseDailyDemand: 34, prepTime: 5, isVeg: true },
-  { id: 'item-12', name: 'Warm Chocolate Gulab Jamun Fondant', category: 'Brews & Desserts' as MenuCategory, basePrice: 165, baseDailyDemand: 30, prepTime: 10, isVeg: true },
+  { id: 'item-2', name: 'Chicken Tikka Butter Kathi Roll', category: 'Rolls & Wraps' as MenuCategory, basePrice: 245, baseDailyDemand: 42, prepTime: 14, isVeg: false },
+  { id: 'item-3', name: 'Crispy Falafel & Spiced Hummus Wrap', category: 'Rolls & Wraps' as MenuCategory, basePrice: 210, baseDailyDemand: 32, prepTime: 12, isVeg: true },
+  { id: 'item-4', name: 'Slow-Cooked Dal Makhani & Jeera Rice Bowl', category: 'Bowls & Thalis' as MenuCategory, basePrice: 260, baseDailyDemand: 48, prepTime: 10, isVeg: true },
+  { id: 'item-5', name: 'Old Delhi Butter Chicken & Garlic Naan Meal', category: 'Bowls & Thalis' as MenuCategory, basePrice: 310, baseDailyDemand: 45, prepTime: 16, isVeg: false },
+  { id: 'item-6', name: 'Homestyle Rajma Masala & Steamed Rice Pot', category: 'Bowls & Thalis' as MenuCategory, basePrice: 240, baseDailyDemand: 38, prepTime: 10, isVeg: true },
+  { id: 'item-7', name: 'Hyderabadi Dum Chicken Biryani Bowl', category: 'Bowls & Thalis' as MenuCategory, basePrice: 295, baseDailyDemand: 52, prepTime: 15, isVeg: false },
+  { id: 'item-8', name: 'Truffle Dahi Puri (6 pcs)', category: 'Chaat & Cafe Bites' as MenuCategory, basePrice: 160, baseDailyDemand: 40, prepTime: 8, isVeg: true },
+  { id: 'item-9', name: 'Crispy Amritsari Fish Fry Bites', category: 'Chaat & Cafe Bites' as MenuCategory, basePrice: 250, baseDailyDemand: 34, prepTime: 10, isVeg: false },
+  { id: 'item-10', name: 'Avocado Sev Papdi Chaat', category: 'Chaat & Cafe Bites' as MenuCategory, basePrice: 185, baseDailyDemand: 28, prepTime: 10, isVeg: true },
+  { id: 'item-11', name: 'Special Cardamom Kulhad Chai', category: 'Brews & Desserts' as MenuCategory, basePrice: 85, baseDailyDemand: 65, prepTime: 6, isVeg: true },
+  { id: 'item-12', name: 'Kesari Rabdi Phirni Pot', category: 'Brews & Desserts' as MenuCategory, basePrice: 145, baseDailyDemand: 34, prepTime: 5, isVeg: true },
 ];
 
 class PRNG {

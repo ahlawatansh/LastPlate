@@ -37,7 +37,6 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
     accuracyEvaluation,
     approveApplication,
     rejectApplication,
-    resetDemoData,
     users,
     searchQuery,
   } = useApp();
@@ -53,6 +52,29 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
     const q = searchQuery.toLowerCase();
     return a.applicantName.toLowerCase().includes(q) ||
       (typeof a.details?.restaurantName === 'string' && a.details.restaurantName.toLowerCase().includes(q));
+  });
+
+  const filteredApplications = applications.filter((a) => {
+    if (!searchQuery) return true;
+    const q = searchQuery.toLowerCase();
+    const detailsStr = Object.values(a.details || {}).join(' ').toLowerCase();
+    return (
+      a.applicantName.toLowerCase().includes(q) ||
+      a.email.toLowerCase().includes(q) ||
+      a.phone.toLowerCase().includes(q) ||
+      a.role.toLowerCase().includes(q) ||
+      detailsStr.includes(q)
+    );
+  });
+
+  const filteredAuditLogs = auditLogs.filter((log) => {
+    if (!searchQuery) return true;
+    const q = searchQuery.toLowerCase();
+    return (
+      log.action.toLowerCase().includes(q) ||
+      log.details.toLowerCase().includes(q) ||
+      log.actorEmail.toLowerCase().includes(q)
+    );
   });
 
   const displayOrders = orders.filter((o) => {
@@ -122,7 +144,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 pb-28">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 sm:pt-5 pb-28 space-y-8">
 
       <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
@@ -137,13 +159,6 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
             Audit partner onboarding compliance, monitor live order liquidity, verify ML model benchmarks, and review platform sustainability.
           </p>
         </div>
-
-        <button
-          onClick={resetDemoData}
-          className="px-4 py-2.5 rounded-full border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold transition-colors flex items-center gap-2 shrink-0 cursor-pointer"
-        >
-          <SlidersHorizontal className="w-4 h-4" /> Reset Demo State
-        </button>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -198,7 +213,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
           </div>
 
           <div className="space-y-4">
-            {applications.map((app) => (
+            {filteredApplications.map((app) => (
               <div
                 key={app.id}
                 className="bg-white rounded-3xl p-6 border border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-4"
@@ -395,7 +410,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
             </p>
 
             <div className="space-y-2.5 max-h-96 overflow-y-auto">
-              {auditLogs.map((log) => {
+              {filteredAuditLogs.map((log) => {
                 const badge = getActionBadge(log.action);
                 return (
                   <div
@@ -425,17 +440,23 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
 
       <AnimatePresence>
         {showRejectModal && (
-          <div onClick={() => setShowRejectModal(false)} className="fixed inset-0 z-50 bg-black/40 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 overflow-y-auto cursor-pointer">
+          <motion.div
+            key="reject-modal-backdrop"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.18 }}
+            onClick={() => setShowRejectModal(false)}
+            className="fixed inset-0 z-50 bg-black/40 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 overflow-y-auto cursor-pointer"
+          >
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 12 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 12 }}
               transition={{ type: 'spring', damping: 28, stiffness: 350 }}
               onClick={(e) => e.stopPropagation()}
-              className="p-2 sm:p-3 rounded-[36px] bg-white/50 backdrop-blur-sm max-w-lg w-full cursor-default my-auto"
+              className="bg-white rounded-3xl w-full max-w-lg overflow-hidden border border-slate-200 shadow-2xl flex flex-col cursor-default my-auto"
             >
-              <div className="bg-white rounded-3xl w-full overflow-hidden border border-slate-200 flex flex-col">
-
               <div className="px-6 py-3.5 border-b border-slate-200 flex items-center justify-between bg-white text-black shrink-0">
                 <div className="flex items-center gap-3">
                   <div>
@@ -480,9 +501,8 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                   </button>
                 </div>
               </div>
-            </div>
             </motion.div>
-          </div>
+          </motion.div>
         )}
       </AnimatePresence>
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Bike,
   Navigation,
@@ -12,6 +12,8 @@ import {
   Phone,
   ChevronRight,
   ShieldCheck,
+  Play,
+  Pause,
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { Order, OrderStatus } from '../../types';
@@ -37,7 +39,7 @@ export const DeliveryPortal: React.FC<DeliveryPortalProps> = ({
 
   const [isOnline, setIsOnline] = useState<boolean>(() => {
     const saved = localStorage.getItem('lastplate_delivery_online');
-    return saved !== null ? saved === 'true' : false;
+    return saved !== null ? saved === 'true' : true;
   });
 
   const toggleOnlineStatus = () => {
@@ -51,6 +53,7 @@ export const DeliveryPortal: React.FC<DeliveryPortalProps> = ({
   const availablePoolOrders = orders.filter((o) => {
     const isAvailable = ['RESTAURANT_ACCEPTED', 'PREPARING', 'READY_FOR_PICKUP'].includes(o.orderStatus) && !o.deliveryPartnerId;
     if (!isAvailable) return false;
+    if (currentUser?.id && o.declinedByDeliveryPartnerIds?.includes(currentUser.id)) return false;
     if (!searchQuery) return true;
     const q = searchQuery.toLowerCase();
     return o.id.toLowerCase().includes(q) ||
@@ -65,28 +68,77 @@ export const DeliveryPortal: React.FC<DeliveryPortalProps> = ({
   );
 
   const completedDeliveries = orders.filter(
-    (o) => o.deliveryPartnerId === currentUser?.id && o.orderStatus === 'DELIVERED'
+    (o) =>
+      o.deliveryPartnerId === currentUser?.id &&
+      o.orderStatus === 'DELIVERED'
   );
 
   const totalEarnings = (completedDeliveries.length * 45) + (activeDelivery ? 45 : 0);
 
   const [claimError, setClaimError] = useState<string | null>(null);
+  const [declinedNotice, setDeclinedNotice] = useState<string | null>(null);
   const [completedOrderSummary, setCompletedOrderSummary] = useState<Order | null>(null);
+  const [isAutoSimulating, setIsAutoSimulating] = useState(false);
+
+  const activeDeliveryRef = useRef(activeDelivery);
+  activeDeliveryRef.current = activeDelivery;
+  const deliveryUpdateStatusRef = useRef(deliveryUpdateStatus);
+  deliveryUpdateStatusRef.current = deliveryUpdateStatus;
+
+  useEffect(() => {
+    if (!isAutoSimulating || !activeDelivery) {
+      if (isAutoSimulating) setIsAutoSimulating(false);
+      return;
+    }
+
+    const intervalId = setInterval(() => {
+      const current = activeDeliveryRef.current;
+      if (!current) {
+        setIsAutoSimulating(false);
+        return;
+      }
+      if (current.orderStatus === 'DELIVERY_ASSIGNED') {
+        deliveryUpdateStatusRef.current(current.id, 'PICKED_UP');
+      } else if (current.orderStatus === 'PICKED_UP') {
+        deliveryUpdateStatusRef.current(current.id, 'OUT_FOR_DELIVERY');
+      } else if (current.orderStatus === 'OUT_FOR_DELIVERY') {
+        deliveryUpdateStatusRef.current(current.id, 'DELIVERED');
+        setCompletedOrderSummary({ ...current, orderStatus: 'DELIVERED' });
+        setIsAutoSimulating(false);
+      } else {
+        setIsAutoSimulating(false);
+      }
+    }, 3500);
+
+    return () => clearInterval(intervalId);
+  }, [isAutoSimulating, activeDelivery?.id]);
 
   const handleClaimOrder = (orderId: string) => {
     setClaimError(null);
+    setDeclinedNotice(null);
     setCompletedOrderSummary(null);
     deliveryAcceptOrder(orderId);
     setActiveTab('active');
   };
 
+  const handleDeclineOrder = (orderId: string) => {
+    deliveryDeclineOrder(orderId);
+    setDeclinedNotice(`Trip #${orderId} was declined and returned to dispatch pool.`);
+    if (activeDelivery?.id === orderId) {
+      setIsAutoSimulating(false);
+      setActiveTab('pool');
+    }
+    setTimeout(() => setDeclinedNotice(null), 4000);
+  };
+
   const handleHandoverAndComplete = (order: Order) => {
+    setIsAutoSimulating(false);
     setCompletedOrderSummary({ ...order, orderStatus: 'DELIVERED' });
     deliveryUpdateStatus(order.id, 'DELIVERED');
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 pb-28">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 sm:pt-5 pb-28 space-y-8">
 
       {claimError && (
         <div className="p-4 rounded-2xl bg-[#1B4332]/10 border border-[#1B4332]/20 text-[#1B4332] text-xs flex items-center justify-between">
@@ -97,6 +149,21 @@ export const DeliveryPortal: React.FC<DeliveryPortalProps> = ({
           <button
             onClick={() => setClaimError(null)}
             className="text-[#1B4332] font-bold hover:underline cursor-pointer"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
+
+      {declinedNotice && (
+        <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex items-center justify-between animate-in fade-in duration-200">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-amber-600 shrink-0" />
+            <span>{declinedNotice}</span>
+          </div>
+          <button
+            onClick={() => setDeclinedNotice(null)}
+            className="text-amber-800 font-bold hover:underline cursor-pointer"
           >
             Dismiss
           </button>
@@ -256,8 +323,8 @@ export const DeliveryPortal: React.FC<DeliveryPortalProps> = ({
                       <CheckCircle2 className="w-4 h-4" /> Accept & Lock Delivery
                     </button>
                     <button
-                      onClick={() => deliveryDeclineOrder(ord.id)}
-                      className="py-2.5 px-4 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold transition-colors cursor-pointer"
+                      onClick={() => handleDeclineOrder(ord.id)}
+                      className="py-2.5 px-4 rounded-full bg-slate-100 hover:bg-rose-50 hover:text-rose-600 text-slate-600 text-xs font-semibold transition-colors cursor-pointer"
                     >
                       Decline
                     </button>
@@ -442,9 +509,43 @@ export const DeliveryPortal: React.FC<DeliveryPortalProps> = ({
               </div>
 
               <div className="p-6 rounded-2xl bg-slate-50 border border-slate-200 space-y-4">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700">
-                  Advance Delivery Workflow Stage:
-                </h3>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700">
+                    Advance Delivery Workflow Stage:
+                  </h3>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setIsAutoSimulating((prev) => !prev)}
+                      className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                        isAutoSimulating
+                          ? 'bg-amber-500 text-white shadow-sm ring-2 ring-amber-300'
+                          : 'bg-[#18181B] text-white hover:bg-black'
+                      }`}
+                    >
+                      {isAutoSimulating ? (
+                        <>
+                          <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
+                          <span>Simulating Route (3.5s)...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Play className="w-3.5 h-3.5 fill-current" />
+                          <span>Auto-Simulate Route</span>
+                        </>
+                      )}
+                    </button>
+                    {activeDelivery.orderStatus === 'DELIVERY_ASSIGNED' && (
+                      <button
+                        type="button"
+                        onClick={() => handleDeclineOrder(activeDelivery.id)}
+                        className="px-3 py-1.5 rounded-full border border-rose-200 text-rose-600 hover:bg-rose-50 text-xs font-semibold cursor-pointer transition-colors"
+                      >
+                        Decline Trip
+                      </button>
+                    )}
+                  </div>
+                </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <button

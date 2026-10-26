@@ -21,27 +21,31 @@ export const ScheduleCalendarView: React.FC<ScheduleCalendarViewProps> = () => {
   const { accuracyEvaluation, historyRecords, whatIfParams } = useApp();
   const dateScrollRef = useRef<HTMLDivElement>(null);
 
+  const now = useMemo(() => new Date(), []);
+  const todayDay = now.getDate();
+  const todayMonth = now.getMonth();
+  const todayYear = now.getFullYear();
+
   const slidingDates = useMemo(() => {
     const days: { date: number; day: string; fullDate: string }[] = [];
     const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    for (let d = 1; d <= 31; d++) {
+    const totalDaysInMonth = new Date(todayYear, todayMonth + 1, 0).getDate();
+    for (let d = 1; d <= totalDaysInMonth; d++) {
       const dateStr = d < 10 ? `0${d}` : `${d}`;
-      const dt = new Date(2026, 9, d);
+      const mStr = todayMonth + 1 < 10 ? `0${todayMonth + 1}` : `${todayMonth + 1}`;
+      const dt = new Date(todayYear, todayMonth, d);
       days.push({
         date: d,
         day: dayNames[dt.getDay()],
-        fullDate: `2026-10-${dateStr}`,
+        fullDate: `${todayYear}-${mStr}-${dateStr}`,
       });
     }
     return days;
-  }, []);
+  }, [todayYear, todayMonth]);
 
-  const todayIndex = 11;
+  const todayIndex = Math.max(0, Math.min(slidingDates.length - 1, todayDay - 1));
   const [selectedDateIndex, setSelectedDateIndex] = useState<number>(todayIndex);
-  const [completedBatches, setCompletedBatches] = useState<Record<string, boolean>>({
-    'batch-breakfast-2026-10-12': true,
-    'batch-lunch-2026-10-12': true,
-  });
+  const [completedBatches, setCompletedBatches] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     if (dateScrollRef.current) {
@@ -162,7 +166,7 @@ export const ScheduleCalendarView: React.FC<ScheduleCalendarViewProps> = () => {
   };
 
   const targetFestival = INDIAN_FESTIVALS.find(
-    (f) => f.month === 10 && f.day === selectedDateObj.date
+    (f) => f.year === todayYear && f.month === todayMonth + 1 && f.day === selectedDateObj.date
   );
 
   return (
@@ -176,21 +180,21 @@ export const ScheduleCalendarView: React.FC<ScheduleCalendarViewProps> = () => {
           <div>
             <div className="flex items-center gap-2">
               <h2 className="text-xl font-black text-zinc-900 font-heading">
-                Today's Production Schedule & AI Accuracy
+                Today's Production Schedule
               </h2>
               <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-zinc-100 text-zinc-900 font-extrabold uppercase tracking-wider">
                 Restaurant Portal
               </span>
             </div>
             <p className="text-xs text-zinc-500 font-medium mt-0.5">
-              Compare today's scheduled kitchen menu against historical AI demand forecasts and model accuracy.
+              Live kitchen batch execution synced with AI forecast studio demand predictions.
             </p>
           </div>
         </div>
 
         <div className="flex items-center gap-2 self-start sm:self-auto">
           <span className="text-xs font-bold text-zinc-900 px-3.5 py-1.5 rounded-full bg-zinc-100">
-            October 2026
+            {now.toLocaleString('default', { month: 'long', year: 'numeric' })}
           </span>
           <div className="flex items-center gap-1 bg-zinc-100 p-1 rounded-full">
             <button

@@ -208,8 +208,9 @@ export const signInWithGoogleFirebase = async (): Promise<FirebaseLoginResult> =
 
   try {
 
+    let timerId: any = null;
     const timeoutPromise = new Promise<never>((_, reject) => {
-      setTimeout(() => {
+      timerId = setTimeout(() => {
         const timeoutErr: any = new Error(
           'Google Sign-In popup did not respond or was blocked by your browser. Please check your browser address bar to allow popups, or use the Redirect option below.'
         );
@@ -218,44 +219,48 @@ export const signInWithGoogleFirebase = async (): Promise<FirebaseLoginResult> =
       }, 20000);
     });
 
-    const result = await Promise.race([
-      signInWithPopup(auth, googleProvider),
-      timeoutPromise,
-    ]);
-    const fbUser: FirebaseUser = result.user;
+    try {
+      const result = await Promise.race([
+        signInWithPopup(auth, googleProvider),
+        timeoutPromise,
+      ]);
+      const fbUser: FirebaseUser = result.user;
 
-    const userData = {
-      uid: fbUser.uid,
-      email: fbUser.email,
-      displayName: fbUser.displayName || (fbUser.email ? fbUser.email.split('@')[0] : 'User'),
-      photoURL: fbUser.photoURL,
-    };
+      const userData = {
+        uid: fbUser.uid,
+        email: fbUser.email,
+        displayName: fbUser.displayName || (fbUser.email ? fbUser.email.split('@')[0] : 'User'),
+        photoURL: fbUser.photoURL,
+      };
 
-    if (db && fbUser.uid) {
-      try {
-        const userRef = doc(db, 'users', fbUser.uid);
-        setDoc(
-          userRef,
-          {
-            uid: fbUser.uid,
-            email: fbUser.email,
-            displayName: fbUser.displayName,
-            photoURL: fbUser.photoURL,
-            lastLogin: new Date().toISOString(),
-          },
-          { merge: true }
-        ).catch((err) => {
+      if (db && fbUser.uid) {
+        try {
+          const userRef = doc(db, 'users', fbUser.uid);
+          setDoc(
+            userRef,
+            {
+              uid: fbUser.uid,
+              email: fbUser.email,
+              displayName: fbUser.displayName,
+              photoURL: fbUser.photoURL,
+              lastLogin: new Date().toISOString(),
+            },
+            { merge: true }
+          ).catch((err) => {
+            console.warn('Firestore user sync notice:', err);
+          });
+        } catch (err) {
           console.warn('Firestore user sync notice:', err);
-        });
-      } catch (err) {
-        console.warn('Firestore user sync notice:', err);
+        }
       }
-    }
 
-    return {
-      success: true,
-      user: userData,
-    };
+      return {
+        success: true,
+        user: userData,
+      };
+    } finally {
+      if (timerId) clearTimeout(timerId);
+    }
   } catch (error: any) {
     console.error('Firebase Google Sign-In error:', error);
     let errorMessage = error.message || 'Failed to authenticate with Google.';
@@ -383,13 +388,15 @@ export const signUpWithEmailFirebase = async (
     if (db && fbUser.uid) {
       try {
         const userRef = doc(db, 'users', fbUser.uid);
-        await setDoc(userRef, {
+        setDoc(userRef, {
           uid: fbUser.uid,
           email: fbUser.email,
           displayName: displayName || '',
           photoURL: fbUser.photoURL || '',
           createdAt: new Date().toISOString(),
           ...additionalData,
+        }).catch((err) => {
+          console.warn('Firestore registration sync notice:', err);
         });
       } catch (err) {
         console.warn('Firestore registration sync notice:', err);
@@ -435,7 +442,8 @@ export const saveOrderToFirestore = async (order: any): Promise<void> => {
 
   try {
     const orderRef = doc(db, 'orders', order.id);
-    await setDoc(orderRef, order, { merge: true });
+    const cleanedOrder = JSON.parse(JSON.stringify(order));
+    await setDoc(orderRef, cleanedOrder, { merge: true });
   } catch (err) {
     console.warn('Error saving order to Firestore:', err);
   }
@@ -447,8 +455,38 @@ export const saveSurplusToFirestore = async (listing: any): Promise<void> => {
 
   try {
     const surplusRef = doc(db, 'surplus', listing.id);
-    await setDoc(surplusRef, listing, { merge: true });
+    const cleanedListing = JSON.parse(JSON.stringify(listing));
+    await setDoc(surplusRef, cleanedListing, { merge: true });
   } catch (err) {
     console.warn('Error saving surplus listing to Firestore:', err);
+  }
+};
+
+export const subscribeToFirestoreOrders = (
+  callback: (orders: any[]) => void
+): (() => void) => {
+  if (!db) initializeFirebase();
+  if (!db) return () => {};
+
+  try {
+    const ordersCol = collection(db, 'orders');
+    return onSnapshot(
+      ordersCol,
+      (snapshot) => {
+        const firestoreOrders: any[] = [];
+        snapshot.forEach((docSnap) => {
+          firestoreOrders.push(docSnap.data());
+        });
+        if (firestoreOrders.length > 0) {
+          callback(firestoreOrders);
+        }
+      },
+      (err) => {
+        console.warn('Firestore orders sync subscription warning:', err);
+      }
+    );
+  } catch (err) {
+    console.warn('Failed to subscribe to Firestore orders:', err);
+    return () => {};
   }
 };

@@ -1,9 +1,9 @@
 import React from 'react';
-import { Clock, ShieldCheck, ArrowRight, LogOut, Building2, Bike, UtensilsCrossed } from 'lucide-react';
+import { Clock, Bike, UtensilsCrossed } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 
 export const PendingApprovalView: React.FC = () => {
-  const { currentUser, logout, quickLoginDemo, applications } = useApp();
+  const { currentUser, applications } = useApp();
 
   const userApp = applications.find((a) => a.userId === currentUser?.id);
 
@@ -74,35 +74,8 @@ export const PendingApprovalView: React.FC = () => {
           )}
 
           <div className="pt-2 text-xs text-slate-500 leading-relaxed">
-            For trust, compliance, and food safety standards, access to the kitchen dashboard or delivery request pool is granted once an administrator verifies business credentials.
+            For trust, compliance, and safety standards, access to the dispatch request pool is granted once an administrator verifies onboarding documents.
           </div>
-
-          <div className="mt-4 p-4 rounded-2xl bg-purple-50 border border-purple-200 flex flex-col sm:flex-row items-center justify-between gap-3">
-            <div className="text-xs text-purple-900">
-              <span className="font-bold flex items-center gap-1.5">
-                <Building2 className="w-4 h-4 text-purple-700" />
-                Want to test Admin Approval right now?
-              </span>
-              <p className="text-[11px] text-purple-700 mt-0.5">
-                Switch to Admin Portal to review and approve this pending onboarding request in 1 click.
-              </p>
-            </div>
-            <button
-              onClick={() => quickLoginDemo('ADMIN')}
-              className="shrink-0 px-4 py-2 rounded-full bg-purple-700 hover:bg-purple-800 text-white text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
-            >
-              Enter Admin Portal <ArrowRight className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        </div>
-
-        <div className="mt-6 flex justify-center">
-          <button
-            onClick={logout}
-            className="flex items-center gap-2 text-xs font-semibold text-slate-600 hover:text-slate-900 px-4 py-2 rounded-full border border-slate-200 bg-white cursor-pointer"
-          >
-            <LogOut className="w-4 h-4" /> Sign Out & Return to Login
-          </button>
         </div>
 
       </div>

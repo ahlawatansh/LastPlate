@@ -157,6 +157,7 @@ export interface Order {
   estimatedDeliveryMinutes: number;
   deliveryDistanceKm: number;
   rejectionReason?: string;
+  declinedByDeliveryPartnerIds?: string[];
   timeline: OrderTimelineEvent[];
   createdAt: string;
   completedAt?: string;

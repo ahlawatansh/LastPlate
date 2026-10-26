@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'motion/react';
 import { AppProvider, useApp } from './context/AppContext';
 import { Header } from './components/common/Header';
@@ -11,6 +11,7 @@ import { RestaurantPortal } from './components/restaurant/RestaurantPortal';
 import { DeliveryPortal } from './components/delivery/DeliveryPortal';
 import { AdminPortal } from './components/admin/AdminPortal';
 import { checkGoogleRedirectResult } from './services/firebase';
+import { UserRole } from './types';
 
 const AppContent: React.FC = () => {
   const { currentUser, users, loginWithFirebaseUser, logout } = useApp();
@@ -24,19 +25,33 @@ const AppContent: React.FC = () => {
   } | null>(null);
   const [isCartOpen, setIsCartOpen] = useState(false);
 
-  const handleOpenLogin = () => {
+  const handleOpenLogin = (role?: UserRole) => {
     setGooglePrefillData(null);
+    if (role === 'DELIVERY') {
+      setInitialLoginRole('DELIVERY');
+    } else {
+      setInitialLoginRole('CUSTOMER');
+    }
     setAuthView('LOGIN');
     logout();
   };
 
+  const usersRef = useRef(users);
+  usersRef.current = users;
+  const loginWithFirebaseUserRef = useRef(loginWithFirebaseUser);
+  loginWithFirebaseUserRef.current = loginWithFirebaseUser;
+  const hasCheckedRedirectRef = useRef(false);
+
   useEffect(() => {
+    if (hasCheckedRedirectRef.current) return;
+    hasCheckedRedirectRef.current = true;
+
     checkGoogleRedirectResult().then((res) => {
       if (res && res.success && res.user && res.user.email) {
         const targetEmail = res.user.email.toLowerCase();
-        const existing = users.find((u) => u.email.toLowerCase() === targetEmail);
+        const existing = usersRef.current.find((u) => u.email.toLowerCase() === targetEmail);
         if (existing) {
-          loginWithFirebaseUser(res.user);
+          loginWithFirebaseUserRef.current(res.user);
         } else {
           setGooglePrefillData({
             uid: res.user.uid,
@@ -48,18 +63,20 @@ const AppContent: React.FC = () => {
         }
       }
     });
-  }, [users, loginWithFirebaseUser]);
+  }, []);
 
   const [customerTab, setCustomerTab] = useState('menu');
   const [restaurantTab, setRestaurantTab] = useState('kitchen');
   const [deliveryTab, setDeliveryTab] = useState('pool');
   const [adminTab, setAdminTab] = useState('approvals');
+  const [initialLoginRole, setInitialLoginRole] = useState<'CUSTOMER' | 'DELIVERY'>('CUSTOMER');
 
   if (!currentUser) {
     return (
       <div className="relative">
         {authView === 'LOGIN' ? (
           <LoginView
+            initialRole={initialLoginRole}
             onSwitchToSignup={() => {
               setGooglePrefillData(null);
               setAuthView('SIGNUP');
@@ -84,7 +101,14 @@ const AppContent: React.FC = () => {
           />
         )}
         <DemoAccountBar
-          onOpenAuth={() => setAuthView('LOGIN')}
+          onOpenAuth={(role) => {
+            if (role === 'DELIVERY') {
+              setInitialLoginRole('DELIVERY');
+            } else {
+              setInitialLoginRole('CUSTOMER');
+            }
+            setAuthView('LOGIN');
+          }}
           onLogout={handleOpenLogin}
         />
       </div>
@@ -129,7 +153,7 @@ const AppContent: React.FC = () => {
           setActiveTab={setActiveTab}
         />
 
-        <main>
+        <main className="pt-0">
           <motion.div
             key={currentUser.role}
             initial={{ opacity: 0, y: 4 }}
