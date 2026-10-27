@@ -251,9 +251,9 @@ export function calculateSuggestedForecast(
   const targetDOW = dayNames[targetDateObj.getDay()];
   const isWeekend = targetDOW === 'Friday' || targetDOW === 'Saturday' || targetDOW === 'Sunday';
 
-  const targetFestival = INDIAN_FESTIVALS.find(
-    (f) => f.month === tMonth && f.day === tDay
-  );
+  const targetFestival =
+    INDIAN_FESTIVALS.find((f) => f.year === tYear && f.month === tMonth && f.day === tDay) ||
+    INDIAN_FESTIVALS.find((f) => f.month === tMonth && f.day === tDay);
 
   const predictions: ForecastPrediction[] = [];
 

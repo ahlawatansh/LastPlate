@@ -156,10 +156,13 @@ export const RestaurantPortal: React.FC<RestaurantPortalProps> = ({
     forecastList.reduce((sum, f) => sum + f.confidenceScore, 0) / Math.max(1, forecastList.length)
   );
 
-  const [, monthStr, dayStr] = selectedDate.split('-');
+  const [yearStr, monthStr, dayStr] = selectedDate.split('-');
+  const selYear = parseInt(yearStr);
   const selMonth = parseInt(monthStr);
   const selDay = parseInt(dayStr);
-  const activeFestival = INDIAN_FESTIVALS.find((f) => f.month === selMonth && f.day === selDay);
+  const activeFestival =
+    INDIAN_FESTIVALS.find((f) => f.year === selYear && f.month === selMonth && f.day === selDay) ||
+    INDIAN_FESTIVALS.find((f) => f.month === selMonth && f.day === selDay);
 
   const isDemoRest = currentUser?.email === 'restaurant@lastplate.demo';
   const currentRestId = currentUser?.restaurantProfile?.restaurantId || (isDemoRest ? 'rest-green-leaf' : `rest-${currentUser?.id}`);
@@ -618,22 +621,22 @@ export const RestaurantPortal: React.FC<RestaurantPortalProps> = ({
                   Today
                 </button>
                 <button
-                  onClick={() => setSelectedDate('2025-10-20')}
+                  onClick={() => setSelectedDate('2026-11-08')}
                   className="px-2.5 py-1 text-[11px] font-semibold bg-[#1B4332]/10 hover:bg-[#1B4332]/20 text-[#1B4332] border border-[#1B4332]/30 rounded-lg transition-colors cursor-pointer"
                 >
-                  Diwali Rush (Oct 20)
+                  Diwali Rush (Nov 8)
                 </button>
                 <button
-                  onClick={() => setSelectedDate('2025-03-14')}
+                  onClick={() => setSelectedDate('2026-03-04')}
                   className="px-2.5 py-1 text-[11px] font-semibold bg-[#1B4332]/10 hover:bg-[#1B4332]/20 text-[#1B4332] border border-[#1B4332]/30 rounded-lg transition-colors cursor-pointer"
                 >
-                  Holi Snacks (Mar 14)
+                  Holi Snacks (Mar 4)
                 </button>
                 <button
-                  onClick={() => setSelectedDate('2025-09-22')}
+                  onClick={() => setSelectedDate('2026-10-11')}
                   className="px-2.5 py-1 text-[11px] font-semibold bg-[#1B4332]/10 hover:bg-[#1B4332]/20 text-[#1B4332] border border-[#1B4332]/30 rounded-lg transition-colors cursor-pointer"
                 >
-                  Navratri Satvik (Sep 22)
+                  Navratri Satvik (Oct 11)
                 </button>
               </div>
             </div>

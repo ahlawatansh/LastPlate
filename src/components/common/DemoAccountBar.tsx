@@ -10,145 +10,68 @@ interface DemoAccountBarProps {
 }
 
 export const DemoAccountBar: React.FC<DemoAccountBarProps> = ({ onOpenAuth, onLogout }) => {
-  const { currentUser, quickLoginDemo, logout } = useApp();
+  const { authenticatedUser, activePortal, switchToPortal, logout } = useApp();
 
   const accounts: {
     role: UserRole;
     name: string;
-    email: string;
     icon: React.ReactNode;
-  }[] = [
-    {
-      role: 'CUSTOMER',
-      name: 'Customer',
-      email: 'customer@lastplate.demo',
-      icon: <ShoppingBag className="w-3.5 h-3.5" />,
-    },
-    {
-      role: 'RESTAURANT',
-      name: 'Restaurant',
-      email: 'restaurant@lastplate.demo',
-      icon: <UtensilsCrossed className="w-3.5 h-3.5" />,
-    },
-    {
-      role: 'DELIVERY',
-      name: 'Delivery',
-      email: 'delivery@lastplate.demo',
-      icon: <Bike className="w-3.5 h-3.5" />,
-    },
-    {
-      role: 'ADMIN',
-      name: 'Admin',
-      email: 'admin@lastplate.demo',
-      icon: <Building2 className="w-3.5 h-3.5" />,
-    },
-  ];
+    title: string;
+  }[] = [];
 
-  const isRealCustomer = Boolean(
-    currentUser &&
-    currentUser.role === 'CUSTOMER' &&
-    !currentUser.email?.endsWith('@lastplate.demo') &&
-    currentUser.id !== 'user-customer-1'
-  );
+  // When logged in, add customer or delivery partner as first item
+  if (authenticatedUser) {
+    if (authenticatedUser.role === 'CUSTOMER') {
+      accounts.push({
+        role: 'CUSTOMER',
+        name: authenticatedUser.name ? `Customer (${authenticatedUser.name.split(' ')[0]})` : 'Customer',
+        icon: <ShoppingBag className="w-3.5 h-3.5" />,
+        title: `Logged in as Customer: ${authenticatedUser.email}`,
+      });
+    } else if (authenticatedUser.role === 'DELIVERY') {
+      accounts.push({
+        role: 'DELIVERY',
+        name: authenticatedUser.name ? `Delivery (${authenticatedUser.name.split(' ')[0]})` : 'Delivery Partner',
+        icon: <Bike className="w-3.5 h-3.5" />,
+        title: `Logged in as Delivery Partner: ${authenticatedUser.email}`,
+      });
+    }
+  }
 
-  const isRealDelivery = Boolean(
-    currentUser &&
-    currentUser.role === 'DELIVERY' &&
-    !currentUser.email?.endsWith('@lastplate.demo') &&
-    currentUser.id !== 'user-delivery-1'
-  );
+  // Restaurant and Admin show ALWAYS!
+  accounts.push({
+    role: 'RESTAURANT',
+    name: 'Restaurant',
+    icon: <UtensilsCrossed className="w-3.5 h-3.5" />,
+    title: 'Restaurant Portal (Kitchen & Surplus Management)',
+  });
 
-  const isDemoAccount = Boolean(
-    currentUser && (
-      currentUser.id === 'user-restaurant-1' ||
-      currentUser.id === 'user-admin-1' ||
-      (currentUser.role === 'RESTAURANT' && currentUser.email?.endsWith('@lastplate.demo')) ||
-      (currentUser.role === 'ADMIN' && currentUser.email?.endsWith('@lastplate.demo'))
-    )
-  );
-
-  const isRealUserLoggedIn = Boolean(
-    currentUser && (
-      isRealCustomer ||
-      isRealDelivery ||
-      currentUser.role === 'CUSTOMER' ||
-      currentUser.role === 'DELIVERY'
-    )
-  );
+  accounts.push({
+    role: 'ADMIN',
+    name: 'Admin',
+    icon: <Building2 className="w-3.5 h-3.5" />,
+    title: 'Admin Governance & Approvals Portal',
+  });
 
   const handleAccountClick = (role: UserRole) => {
-    if (role === 'CUSTOMER') {
-      if (currentUser?.role === 'CUSTOMER') {
-        return;
-      }
-      if (onOpenAuth) onOpenAuth('CUSTOMER');
-      return;
-    }
-
-    if (role === 'DELIVERY') {
-      if (currentUser?.role === 'DELIVERY') {
-        return;
-      }
-      if (onOpenAuth) onOpenAuth('DELIVERY');
-      return;
-    }
-
-    quickLoginDemo(role);
-  };
-
-  const isRoleActive = (role: UserRole) => {
-    if (role === 'CUSTOMER') {
-      return currentUser?.role === 'CUSTOMER';
-    }
-    if (role === 'DELIVERY') {
-      return currentUser?.role === 'DELIVERY';
-    }
-    return currentUser?.role === role && (isDemoAccount || currentUser.role === role);
-  };
-
-  const getRoleDisplayName = (role: UserRole, defaultName: string) => {
-    if (role === 'CUSTOMER') {
-      if (currentUser?.role === 'CUSTOMER') {
-        return currentUser?.name ? `Customer (${currentUser.name.split(' ')[0]})` : 'Customer';
-      }
-      return 'Customer';
-    }
-    if (role === 'DELIVERY') {
-      if (currentUser?.role === 'DELIVERY') {
-        return currentUser?.name ? `Delivery (${currentUser.name.split(' ')[0]})` : 'Delivery';
-      }
-      return 'Delivery';
-    }
-    return defaultName;
+    switchToPortal(role);
   };
 
   const handleLoginClick = () => {
     if (onOpenAuth) {
       onOpenAuth();
     } else {
-      logout();
+      switchToPortal('AUTH');
     }
   };
 
-  const handleLogoutClick = () => {
-    if (onLogout) {
-      onLogout();
-    } else if (onOpenAuth) {
-      onOpenAuth();
-    } else {
-      logout();
-    }
-  };
-
-  const isAuthActive = !currentUser;
+  const isAuthActive = activePortal === 'AUTH';
 
   return (
     <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 max-w-fit flex items-center gap-2">
-
       <div className="bg-white rounded-full border border-slate-200/90 p-1 flex items-center justify-center gap-1 flex-nowrap whitespace-nowrap h-11 relative">
         {accounts.map((acc) => {
-          const isActive = isRoleActive(acc.role);
-          const displayName = getRoleDisplayName(acc.role, acc.name);
+          const isActive = activePortal === acc.role;
           return (
             <button
               key={acc.role}
@@ -158,13 +81,7 @@ export const DemoAccountBar: React.FC<DemoAccountBarProps> = ({ onOpenAuth, onLo
                   ? 'text-white'
                   : 'text-zinc-600 hover:text-black hover:bg-slate-100/70'
               }`}
-              title={
-                acc.role === 'CUSTOMER'
-                  ? isRealCustomer
-                    ? `Logged in as Customer: ${currentUser?.email}`
-                    : 'Customer Portal (Real account login required - click to sign in)'
-                  : `Switch to ${acc.name} (${acc.email})`
-              }
+              title={acc.title}
             >
               {isActive && (
                 <motion.div
@@ -174,19 +91,25 @@ export const DemoAccountBar: React.FC<DemoAccountBarProps> = ({ onOpenAuth, onLo
                 />
               )}
               {acc.icon}
-              <span>{displayName}</span>
+              <span>{acc.name}</span>
             </button>
           );
         })}
       </div>
 
-      {isRealUserLoggedIn ? (
+      {authenticatedUser ? (
         <button
-          onClick={handleLogoutClick}
-          className="flex items-center gap-1.5 px-4 h-11 rounded-full text-xs font-bold transition-all cursor-pointer shrink-0 whitespace-nowrap border border-slate-200/90 bg-white text-zinc-900 hover:bg-slate-50 hover:text-black"
-          title="Log out and return to login"
+          onClick={() => {
+            if (onLogout) {
+              onLogout();
+            } else {
+              logout();
+            }
+          }}
+          className="flex items-center gap-1.5 px-4 h-11 rounded-full text-xs font-bold transition-all cursor-pointer shrink-0 whitespace-nowrap border border-slate-200/90 bg-white text-zinc-800 hover:text-rose-600 hover:bg-rose-50 hover:border-rose-200"
+          title={`Log out of ${authenticatedUser.email}`}
         >
-          <LogOut className="w-3.5 h-3.5 text-zinc-800" />
+          <LogOut className="w-3.5 h-3.5 text-zinc-700" />
           <span>Logout</span>
         </button>
       ) : (
@@ -197,7 +120,7 @@ export const DemoAccountBar: React.FC<DemoAccountBarProps> = ({ onOpenAuth, onLo
               ? 'bg-[#18181B] text-white border border-[#18181B]'
               : 'border border-slate-200/90 bg-white text-zinc-900 hover:bg-slate-50'
           }`}
-          title={currentUser ? 'Switch to login screen' : 'Sign in to account'}
+          title="Sign in to account"
         >
           <LogIn className={`w-3.5 h-3.5 ${isAuthActive ? 'text-white' : 'text-zinc-800'}`} />
           <span>Login</span>

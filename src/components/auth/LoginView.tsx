@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Lock, Mail, ArrowRight, Eye, EyeOff, ShieldCheck, CheckCircle2, Loader2, User, Bike } from 'lucide-react';
+import { Lock, Mail, ArrowRight, Eye, EyeOff, ShieldCheck, CheckCircle2, Loader2, ShoppingBag, Bike } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { signInWithGoogleFirebase, signInWithGoogleRedirectFirebase, signInWithEmailFirebase } from '../../services/firebase';
 import { FirebaseConfigModal } from './FirebaseConfigModal';
@@ -101,34 +101,16 @@ export const LoginView: React.FC<LoginViewProps> = ({ initialRole = 'CUSTOMER', 
     setError(null);
     setIsGoogleLoading(true);
     try {
-      const result = await signInWithGoogleFirebase();
+      const result = await signInWithGoogleRedirectFirebase();
       if (result.isConfigurationMissing) {
         setIsConfigModalOpen(true);
+        setIsGoogleLoading(false);
         return;
       }
-
-      if (result.success && result.user) {
-        processGoogleUser({
-          uid: result.user.uid,
-          email: result.user.email || '',
-          displayName: result.user.displayName || (result.user.email ? result.user.email.split('@')[0] : 'User'),
-          photoURL: result.user.photoURL || undefined,
-        });
-      } else if (result.error) {
+      if (result.error) {
         setError(result.error);
+        setIsGoogleLoading(false);
       }
-    } catch (err: any) {
-      setError(err?.message || 'Failed to authenticate with Google.');
-    } finally {
-      setIsGoogleLoading(false);
-    }
-  };
-
-  const handleGoogleRedirectLogin = async () => {
-    setError(null);
-    setIsGoogleLoading(true);
-    try {
-      await signInWithGoogleRedirectFirebase();
     } catch (err: any) {
       setError(err?.message || 'Failed to redirect to Google.');
       setIsGoogleLoading(false);
@@ -212,7 +194,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ initialRole = 'CUSTOMER', 
                           : 'text-slate-500 font-normal hover:text-slate-800 border-b-2 border-transparent'
                       }`}
                     >
-                      <User className="w-3 h-3" />
+                      <ShoppingBag className="w-3 h-3" />
                       <span>Customer</span>
                     </button>
                     <button
@@ -242,10 +224,10 @@ export const LoginView: React.FC<LoginViewProps> = ({ initialRole = 'CUSTOMER', 
                   {(error.toLowerCase().includes('popup') || error.toLowerCase().includes('google')) && (
                     <button
                       type="button"
-                      onClick={handleGoogleRedirectLogin}
+                      onClick={handleGoogleLogin}
                       className="font-bold text-[#1B4332] underline hover:text-black cursor-pointer inline-flex items-center gap-1.5"
                     >
-                      <span>Or sign in directly using Google Page Redirect</span>
+                      <span>Try Google Page Redirect again</span>
                       <span>↗</span>
                     </button>
                   )}
@@ -266,7 +248,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ initialRole = 'CUSTOMER', 
                       required
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      placeholder={selectedRole === 'DELIVERY' ? '' : 'name@example.com'}
+                      placeholder="name@example.com"
                       className="block w-full pl-10 pr-3.5 py-2.5 text-xs border border-slate-200 rounded-full focus:ring-2 focus:ring-[#1B4332] focus:border-transparent outline-none text-slate-900 placeholder:text-slate-400"
                     />
                   </div>
@@ -285,7 +267,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ initialRole = 'CUSTOMER', 
                       required
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      placeholder={selectedRole === 'DELIVERY' ? '' : 'Enter your password'}
+                      placeholder="Enter your password"
                       className="block w-full pl-10 pr-10 py-2.5 text-xs border border-slate-200 rounded-full focus:ring-2 focus:ring-[#1B4332] focus:border-transparent outline-none text-slate-900 placeholder:text-slate-400"
                     />
                     <button
@@ -329,21 +311,9 @@ export const LoginView: React.FC<LoginViewProps> = ({ initialRole = 'CUSTOMER', 
               </div>
 
               {isGoogleLoading ? (
-                <div className="w-full flex items-center justify-between py-2.5 px-4 border border-slate-200 rounded-full bg-slate-50 text-xs">
-                  <div className="flex items-center gap-2.5 text-slate-700 font-medium truncate">
-                    <Loader2 className="w-4 h-4 animate-spin text-[#1B4332] shrink-0" />
-                    <span className="truncate">Connecting to Firebase Google...</span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsGoogleLoading(false);
-                      setError('Sign-in cancelled. If the popup was blocked by your browser, you can allow popups in the URL bar or use Google Redirect below.');
-                    }}
-                    className="text-xs font-bold text-rose-600 hover:underline cursor-pointer shrink-0 ml-2"
-                  >
-                    Cancel
-                  </button>
+                <div className="w-full flex items-center justify-center gap-2.5 py-2.5 px-4 border border-slate-200 rounded-full bg-slate-50 text-xs font-semibold text-slate-700">
+                  <Loader2 className="w-4 h-4 animate-spin text-[#1B4332] shrink-0" />
+                  <span>Redirecting to Google...</span>
                 </div>
               ) : (
                 <button

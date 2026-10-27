@@ -349,8 +349,8 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
                       type="text"
                       value={tempAddress}
                       onChange={(e) => setTempAddress(e.target.value)}
-                      className="px-4 py-1.5 text-xs border border-slate-300 rounded-full bg-white outline-none focus:border-black w-72"
-                      placeholder="Enter complete delivery address"
+                      className="px-4 py-1.5 text-xs font-normal border border-slate-300 rounded-full bg-white outline-none focus:border-black w-72 placeholder:text-slate-400 placeholder:text-xs placeholder:font-light"
+                      placeholder="Enter delivery address..."
                     />
                     <button
                       onClick={() => {

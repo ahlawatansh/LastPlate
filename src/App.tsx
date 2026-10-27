@@ -14,7 +14,15 @@ import { checkGoogleRedirectResult } from './services/firebase';
 import { UserRole } from './types';
 
 const AppContent: React.FC = () => {
-  const { currentUser, users, loginWithFirebaseUser, logout } = useApp();
+  const {
+    currentUser,
+    authenticatedUser,
+    activePortal,
+    switchToPortal,
+    users,
+    loginWithFirebaseUser,
+    logout,
+  } = useApp();
 
   const [authView, setAuthView] = useState<'LOGIN' | 'SIGNUP'>('LOGIN');
   const [googlePrefillData, setGooglePrefillData] = useState<{
@@ -24,6 +32,7 @@ const AppContent: React.FC = () => {
     photoURL?: string;
   } | null>(null);
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [initialLoginRole, setInitialLoginRole] = useState<'CUSTOMER' | 'DELIVERY'>('CUSTOMER');
 
   const handleOpenLogin = (role?: UserRole) => {
     setGooglePrefillData(null);
@@ -33,7 +42,7 @@ const AppContent: React.FC = () => {
       setInitialLoginRole('CUSTOMER');
     }
     setAuthView('LOGIN');
-    logout();
+    switchToPortal('AUTH');
   };
 
   const usersRef = useRef(users);
@@ -60,18 +69,18 @@ const AppContent: React.FC = () => {
             photoURL: res.user.photoURL || undefined,
           });
           setAuthView('SIGNUP');
+          switchToPortal('AUTH');
         }
       }
     });
-  }, []);
+  }, [switchToPortal]);
 
   const [customerTab, setCustomerTab] = useState('menu');
   const [restaurantTab, setRestaurantTab] = useState('kitchen');
   const [deliveryTab, setDeliveryTab] = useState('pool');
   const [adminTab, setAdminTab] = useState('approvals');
-  const [initialLoginRole, setInitialLoginRole] = useState<'CUSTOMER' | 'DELIVERY'>('CUSTOMER');
 
-  if (!currentUser) {
+  if (activePortal === 'AUTH') {
     return (
       <div className="relative">
         {authView === 'LOGIN' ? (
@@ -101,34 +110,27 @@ const AppContent: React.FC = () => {
           />
         )}
         <DemoAccountBar
-          onOpenAuth={(role) => {
-            if (role === 'DELIVERY') {
-              setInitialLoginRole('DELIVERY');
-            } else {
-              setInitialLoginRole('CUSTOMER');
-            }
-            setAuthView('LOGIN');
-          }}
-          onLogout={handleOpenLogin}
+          onOpenAuth={handleOpenLogin}
+          onLogout={logout}
         />
       </div>
     );
   }
 
-  if (currentUser.status === 'PENDING_APPROVAL') {
+  if (currentUser && currentUser.status === 'PENDING_APPROVAL' && (activePortal === 'CUSTOMER' || activePortal === 'DELIVERY')) {
     return (
       <div className="relative">
         <PendingApprovalView />
         <DemoAccountBar
           onOpenAuth={handleOpenLogin}
-          onLogout={handleOpenLogin}
+          onLogout={logout}
         />
       </div>
     );
   }
 
   const getCurrentTabAndSetter = () => {
-    switch (currentUser.role) {
+    switch (activePortal) {
       case 'CUSTOMER':
         return { activeTab: customerTab, setActiveTab: setCustomerTab };
       case 'RESTAURANT':
@@ -155,12 +157,12 @@ const AppContent: React.FC = () => {
 
         <main className="pt-0">
           <motion.div
-            key={currentUser.role}
+            key={activePortal}
             initial={{ opacity: 0, y: 4 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.18, ease: 'easeOut' }}
           >
-            {currentUser.role === 'CUSTOMER' && (
+            {activePortal === 'CUSTOMER' && (
               <CustomerPortal
                 activeTab={customerTab}
                 setActiveTab={setCustomerTab}
@@ -169,21 +171,21 @@ const AppContent: React.FC = () => {
               />
             )}
 
-            {currentUser.role === 'RESTAURANT' && (
+            {activePortal === 'RESTAURANT' && (
               <RestaurantPortal
                 activeTab={restaurantTab}
                 setActiveTab={setRestaurantTab}
               />
             )}
 
-            {currentUser.role === 'DELIVERY' && (
+            {activePortal === 'DELIVERY' && (
               <DeliveryPortal
                 activeTab={deliveryTab}
                 setActiveTab={setDeliveryTab}
               />
             )}
 
-            {currentUser.role === 'ADMIN' && (
+            {activePortal === 'ADMIN' && (
               <AdminPortal
                 activeTab={adminTab}
                 setActiveTab={setAdminTab}
@@ -195,7 +197,7 @@ const AppContent: React.FC = () => {
 
       <DemoAccountBar
         onOpenAuth={handleOpenLogin}
-        onLogout={handleOpenLogin}
+        onLogout={logout}
       />
     </div>
   );

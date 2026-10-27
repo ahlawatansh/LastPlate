@@ -13,8 +13,6 @@ import {
   Bell,
   Search,
   X,
-  LogOut,
-  RotateCcw,
   User,
   Building2,
 } from 'lucide-react';
@@ -30,7 +28,9 @@ interface HeaderProps {
 export const Header: React.FC<HeaderProps> = ({ onOpenCart, activeTab = 'menu', setActiveTab }) => {
   const {
     currentUser,
-    logout,
+    authenticatedUser,
+    activePortal,
+    switchToPortal,
     cart,
     notifications,
     searchQuery,
@@ -91,27 +91,27 @@ export const Header: React.FC<HeaderProps> = ({ onOpenCart, activeTab = 'menu', 
     switch (currentUser?.role) {
       case 'CUSTOMER':
         return {
-          placeholder: 'Search dishes, chef specials, rolls, bowls & thalis...',
+          placeholder: 'Search dishes & deals...',
           subtitle: 'Discover fresh kitchen specials and dynamic closing surplus deals',
         };
       case 'RESTAURANT':
         return {
-          placeholder: 'Search incoming tickets, customer names, dish catalog...',
+          placeholder: 'Search orders & catalog...',
           subtitle: 'Live kitchen orders, dynamic surplus inventory and AI demand forecasting',
         };
       case 'DELIVERY':
         return {
-          placeholder: 'Search dispatch pool trips, order IDs, delivery addresses...',
+          placeholder: 'Search trips & orders...',
           subtitle: 'Active courier dispatch pool and route simulation',
         };
       case 'ADMIN':
         return {
-          placeholder: 'Search partner applications, rider licenses, system audit logs...',
+          placeholder: 'Search partners & logs...',
           subtitle: 'Partner governance, platform compliance and audit trail',
         };
       default:
         return {
-          placeholder: 'Search dishes, orders, surplus deals...',
+          placeholder: 'Search...',
           subtitle: 'Welcome to LastPlate',
         };
     }
@@ -229,20 +229,27 @@ export const Header: React.FC<HeaderProps> = ({ onOpenCart, activeTab = 'menu', 
 
             {/* Left: Brand Logo */}
             <div className="flex items-center shrink-0">
-              <a
-                href="/"
-                className="flex items-center group select-none hover:opacity-90 transition-opacity"
+              <button
+                type="button"
+                onClick={() => {
+                  if (authenticatedUser) {
+                    switchToPortal(authenticatedUser.role === 'DELIVERY' ? 'DELIVERY' : 'CUSTOMER');
+                  } else {
+                    switchToPortal('AUTH');
+                  }
+                }}
+                className="flex items-center group select-none hover:opacity-90 transition-opacity cursor-pointer bg-transparent border-0 p-0"
               >
                 <span className="text-2xl sm:text-3xl font-extrabold tracking-tight font-heading lowercase">
                   <span className="text-slate-950 font-extrabold">last</span>
                   <span className="text-[#1B4332] font-black">plate</span>
                 </span>
-              </a>
+              </button>
             </div>
 
             {/* Middle: Top Navbar between Logo and Notification Button */}
             {currentUser && setActiveTab && (
-              <nav className="hidden lg:flex flex-1 items-center justify-center gap-2 sm:gap-3 py-1 px-2 min-w-0 scroll-smooth">
+              <nav className="hidden lg:flex flex-1 items-center justify-center gap-4 sm:gap-5 lg:gap-6 py-1 px-2 min-w-0 scroll-smooth">
                 {portalTabs.map((tab) => {
                   const Icon = tab.icon;
                   const isActive = activeTab === tab.id;
@@ -251,7 +258,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenCart, activeTab = 'menu', 
                       key={tab.id}
                       type="button"
                       onClick={() => setActiveTab(tab.id)}
-                      className={`relative px-2 py-1 pb-1.5 text-[11px] transition-colors duration-150 cursor-pointer flex items-center gap-1.5 shrink-0 select-none ${
+                      className={`relative px-2.5 py-1 pb-1.5 text-[11px] sm:text-xs transition-colors duration-150 cursor-pointer flex items-center gap-1.5 shrink-0 select-none ${
                         isActive
                           ? 'text-slate-950 font-bold border-b-2 border-slate-950'
                           : 'text-slate-500 font-normal hover:text-slate-900 border-b-2 border-transparent'
@@ -304,43 +311,26 @@ export const Header: React.FC<HeaderProps> = ({ onOpenCart, activeTab = 'menu', 
                 </button>
               )}
 
-              {currentUser ? (
-                <div className="flex items-center gap-1.5 select-none">
-                  <div className="flex items-center gap-2.5 p-1 sm:pr-2 rounded-full cursor-default">
-                    <div className="w-8 h-8 rounded-full bg-[#18181B] text-white flex items-center justify-center shrink-0 select-none shadow-xs border border-zinc-900/10">
-                      {getRoleIcon()}
+              {currentUser && (
+                <div className="flex items-center gap-2 sm:pr-1 rounded-full select-none cursor-default">
+                  <div className="w-8 h-8 rounded-full bg-[#18181B] text-white flex items-center justify-center shrink-0 select-none shadow-xs border border-zinc-900/10">
+                    {getRoleIcon()}
+                  </div>
+                  <div className="text-left hidden sm:block">
+                    <div className="text-xs font-black text-slate-900 leading-tight truncate max-w-[140px]">
+                      {currentUser.name || currentUser.email?.split('@')[0] || 'Account Holder'}
                     </div>
-                    <div className="text-left hidden sm:block">
-                      <div className="text-xs font-black text-slate-900 leading-tight truncate max-w-[130px]">
-                        {currentUser.name || currentUser.email?.split('@')[0] || 'Account Holder'}
-                      </div>
-                      <div className="text-[10px] text-slate-400 font-medium leading-none truncate max-w-[130px] mt-0.5">
-                        {currentUser.email}
-                      </div>
+                    <div className="text-[10px] text-slate-400 font-medium leading-none truncate max-w-[140px] mt-0.5">
+                      {currentUser.email}
                     </div>
                   </div>
-                  <button
-                    type="button"
-                    onClick={logout}
-                    className="w-8 h-8 rounded-full bg-transparent hover:bg-rose-50 hover:text-rose-600 text-slate-400 flex items-center justify-center transition-colors cursor-pointer shrink-0"
-                    title="Log Out"
-                  >
-                    <LogOut className="w-3.5 h-3.5" />
-                  </button>
                 </div>
-              ) : (
-                <a
-                  href="/login"
-                  className="px-4 py-1.5 text-xs font-bold rounded-full bg-[#18181B] text-white hover:bg-black transition-colors"
-                >
-                  Sign In
-                </a>
               )}
             </div>
           </div>
 
           {currentUser && setActiveTab && (
-            <div className="lg:hidden py-2 border-t border-slate-100 overflow-x-auto scrollbar-none flex items-center gap-2 scroll-smooth">
+            <div className="lg:hidden py-2 border-t border-slate-100 overflow-x-auto scrollbar-none flex items-center gap-3.5 scroll-smooth">
               {portalTabs.map((tab) => {
                 const Icon = tab.icon;
                 const isActive = activeTab === tab.id;
@@ -349,7 +339,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenCart, activeTab = 'menu', 
                     key={tab.id}
                     type="button"
                     onClick={() => setActiveTab(tab.id)}
-                    className={`px-2 py-1 pb-1.5 text-[11px] transition-colors cursor-pointer flex items-center gap-1 shrink-0 ${
+                    className={`px-2.5 py-1 pb-1.5 text-[11px] transition-colors cursor-pointer flex items-center gap-1.5 shrink-0 ${
                       isActive
                         ? 'text-slate-950 font-bold border-b-2 border-slate-950'
                         : 'text-slate-500 font-normal hover:text-slate-900 border-b-2 border-transparent'
@@ -385,14 +375,14 @@ export const Header: React.FC<HeaderProps> = ({ onOpenCart, activeTab = 'menu', 
 
             <div className="w-full md:w-auto md:min-w-[360px] lg:min-w-[420px] max-w-md md:ml-auto">
               <div className="relative w-full">
-                <div className="flex items-center bg-white border border-zinc-200 hover:border-zinc-400 focus-within:border-black rounded-full pl-4 pr-3 py-2 transition-all">
-                  <Search className="w-4 h-4 text-slate-400 shrink-0 mr-2.5 pointer-events-none" />
+                <div className="flex items-center bg-white border border-zinc-200/90 hover:border-zinc-300 focus-within:border-black rounded-full pl-3.5 pr-2.5 py-1.5 transition-all">
+                  <Search className="w-3.5 h-3.5 text-slate-400 shrink-0 mr-2 pointer-events-none" />
                   <input
                     type="text"
                     value={searchQuery}
                     onChange={(e) => handleSearchChange(e.target.value)}
                     placeholder={getSearchConfig().placeholder}
-                    className="w-full text-xs sm:text-sm font-medium text-slate-900 bg-transparent outline-none placeholder:text-slate-400 placeholder:font-light"
+                    className="w-full text-xs font-normal text-slate-800 bg-transparent outline-none placeholder:text-slate-400 placeholder:text-xs placeholder:font-light"
                   />
                   {searchQuery && (
                     <button

@@ -44,6 +44,11 @@ export interface CartItem {
 
 interface AppContextType {
   currentUser: User | null;
+  authenticatedUser: User | null;
+  authenticatedUserId: string | null;
+  activePortal: 'CUSTOMER' | 'RESTAURANT' | 'DELIVERY' | 'ADMIN' | 'AUTH';
+  setActivePortal: (portal: 'CUSTOMER' | 'RESTAURANT' | 'DELIVERY' | 'ADMIN' | 'AUTH') => void;
+  switchToPortal: (portal: 'CUSTOMER' | 'RESTAURANT' | 'DELIVERY' | 'ADMIN' | 'AUTH') => void;
   users: User[];
   menuItems: MenuItem[];
   surplusListings: SurplusListing[];
@@ -149,14 +154,16 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | null>(null);
 
 const STORAGE_KEYS = {
-  USERS: 'lastplate_users_v2',
+  USERS: 'lastplate_users_clean_v1',
   CURRENT_USER_ID: 'lastplate_current_user_id_v2',
+  AUTHENTICATED_USER_ID: 'lastplate_authenticated_user_id_v2',
+  ACTIVE_PORTAL: 'lastplate_active_portal_v2',
   MENU: 'lastplate_menu_v2',
-  SURPLUS: 'lastplate_surplus_v3',
-  ORDERS: 'lastplate_orders_v3',
-  APPS: 'lastplate_apps_v2',
-  LOGS: 'lastplate_logs_v2',
-  NOTIFS: 'lastplate_notifs_v2',
+  SURPLUS: 'lastplate_surplus_clean_v2',
+  ORDERS: 'lastplate_orders_clean_v1',
+  APPS: 'lastplate_apps_clean_v1',
+  LOGS: 'lastplate_logs_clean_v1',
+  NOTIFS: 'lastplate_notifs_clean_v1',
   CART: 'lastplate_cart_v2',
 };
 
@@ -186,7 +193,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const [users, setUsers] = useState<User[]>(() => {
     const parsed = safeParseArray<User>(STORAGE_KEYS.USERS, SEED_USERS);
-    return parsed.map((u) => {
+    // Keep only non-demo users or essential restaurant/admin seed identities
+    const filtered = parsed.filter(
+      (u) => u.id !== 'user-customer-1' && u.id !== 'user-delivery-1' && u.id !== 'user-new-del'
+    );
+    for (const seedU of SEED_USERS) {
+      if (!filtered.some((u) => u.id === seedU.id)) {
+        filtered.push(seedU);
+      }
+    }
+    return filtered.map((u) => {
       if (u.customerProfile) {
         return {
           ...u,
@@ -201,12 +217,36 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
   });
 
-  const [currentUserId, setCurrentUserId] = useState<string | null>(() => {
-    const saved = localStorage.getItem(STORAGE_KEYS.CURRENT_USER_ID);
+  const [authenticatedUserId, setAuthenticatedUserId] = useState<string | null>(() => {
+    const saved = localStorage.getItem(STORAGE_KEYS.AUTHENTICATED_USER_ID);
     if (!saved || saved === 'user-customer-1' || saved === 'user-delivery-1') {
       return null;
     }
     return saved;
+  });
+
+  const [activePortal, setActivePortal] = useState<'CUSTOMER' | 'RESTAURANT' | 'DELIVERY' | 'ADMIN' | 'AUTH'>(() => {
+    const savedPortal = localStorage.getItem(STORAGE_KEYS.ACTIVE_PORTAL) as any;
+    const savedAuth = localStorage.getItem(STORAGE_KEYS.AUTHENTICATED_USER_ID);
+    const validPortals = ['CUSTOMER', 'RESTAURANT', 'DELIVERY', 'ADMIN', 'AUTH'];
+    if (savedPortal && validPortals.includes(savedPortal)) {
+      if ((savedPortal === 'CUSTOMER' || savedPortal === 'DELIVERY') && (!savedAuth || savedAuth === 'user-customer-1' || savedAuth === 'user-delivery-1')) {
+        return 'AUTH';
+      }
+      return savedPortal;
+    }
+    return savedAuth && savedAuth !== 'user-customer-1' && savedAuth !== 'user-delivery-1' ? 'CUSTOMER' : 'AUTH';
+  });
+
+  const [currentUserId, setCurrentUserId] = useState<string | null>(() => {
+    const savedPortal = localStorage.getItem(STORAGE_KEYS.ACTIVE_PORTAL);
+    const savedAuth = localStorage.getItem(STORAGE_KEYS.AUTHENTICATED_USER_ID);
+    if (savedPortal === 'RESTAURANT') return 'user-restaurant-1';
+    if (savedPortal === 'ADMIN') return 'user-admin-1';
+    if (savedAuth && savedAuth !== 'user-customer-1' && savedAuth !== 'user-delivery-1') {
+      return savedAuth;
+    }
+    return null;
   });
 
   const [menuItems, setMenuItems] = useState<MenuItem[]>(() => {
@@ -214,29 +254,35 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   });
 
   const [surplusListings, setSurplusListings] = useState<SurplusListing[]>(() => {
-    return safeParseArray<SurplusListing>(STORAGE_KEYS.SURPLUS, SEED_SURPLUS_LISTINGS);
+    const parsed = safeParseArray<SurplusListing>(STORAGE_KEYS.SURPLUS, SEED_SURPLUS_LISTINGS);
+    return parsed.length > 0 ? parsed : SEED_SURPLUS_LISTINGS;
   });
 
   const [orders, setOrders] = useState<Order[]>(() => {
     const parsed = safeParseArray<Order>(STORAGE_KEYS.ORDERS, SEED_ORDERS);
-    return parsed.map((o) => ({
-      ...o,
-      deliveryAddress: sanitizeBangaloreAddress(o.deliveryAddress),
-    }));
+    return parsed
+      .filter((o) => !o.id.startsWith('ORD-'))
+      .map((o) => ({
+        ...o,
+        deliveryAddress: sanitizeBangaloreAddress(o.deliveryAddress),
+      }));
   });
   const ordersRef = useRef<Order[]>(orders);
   ordersRef.current = orders;
 
   const [applications, setApplications] = useState<OnboardingApplication[]>(() => {
-    return safeParseArray<OnboardingApplication>(STORAGE_KEYS.APPS, SEED_ONBOARDING_APPLICATIONS);
+    const parsed = safeParseArray<OnboardingApplication>(STORAGE_KEYS.APPS, SEED_ONBOARDING_APPLICATIONS);
+    return parsed.filter((a) => a.id !== 'app-rest-2' && a.id !== 'app-del-2');
   });
 
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>(() => {
-    return safeParseArray<AuditLog>(STORAGE_KEYS.LOGS, SEED_AUDIT_LOGS);
+    const parsed = safeParseArray<AuditLog>(STORAGE_KEYS.LOGS, SEED_AUDIT_LOGS);
+    return parsed.filter((l) => !l.id.startsWith('audit-1') && !l.id.startsWith('audit-2') && !l.id.startsWith('audit-3'));
   });
 
   const [notifications, setNotifications] = useState<NotificationItem[]>(() => {
-    return safeParseArray<NotificationItem>(STORAGE_KEYS.NOTIFS, SEED_NOTIFICATIONS);
+    const parsed = safeParseArray<NotificationItem>(STORAGE_KEYS.NOTIFS, SEED_NOTIFICATIONS);
+    return parsed.filter((n) => !n.id.startsWith('notif-'));
   });
 
   const [cart, setCart] = useState<CartItem[]>(() => {
@@ -270,6 +316,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       localStorage.removeItem(STORAGE_KEYS.CURRENT_USER_ID);
     }
   }, [currentUserId]);
+
+  useEffect(() => {
+    if (authenticatedUserId) {
+      localStorage.setItem(STORAGE_KEYS.AUTHENTICATED_USER_ID, authenticatedUserId);
+    } else {
+      localStorage.removeItem(STORAGE_KEYS.AUTHENTICATED_USER_ID);
+    }
+  }, [authenticatedUserId]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.ACTIVE_PORTAL, activePortal);
+  }, [activePortal]);
 
   const broadcastSync = useCallback((payload: Record<string, any>) => {
     if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
@@ -423,9 +481,53 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     localStorage.setItem(STORAGE_KEYS.CART, JSON.stringify(cart));
   }, [cart]);
 
+  const authenticatedUser = useMemo(() => {
+    if (!authenticatedUserId) return null;
+    return users.find((u) => u.id === authenticatedUserId) || null;
+  }, [users, authenticatedUserId]);
+
   const currentUser = useMemo(() => {
     return users.find((u) => u.id === currentUserId) || null;
   }, [users, currentUserId]);
+
+  const switchToPortal = useCallback(
+    (portal: 'CUSTOMER' | 'RESTAURANT' | 'DELIVERY' | 'ADMIN' | 'AUTH') => {
+      setActivePortal(portal);
+
+      if (portal === 'CUSTOMER') {
+        if (authenticatedUserId) {
+          const authUser = users.find((u) => u.id === authenticatedUserId);
+          if (authUser && authUser.role === 'CUSTOMER') {
+            setCurrentUserId(authenticatedUserId);
+            return;
+          }
+        }
+        setActivePortal('AUTH');
+      } else if (portal === 'DELIVERY') {
+        if (authenticatedUserId) {
+          const authUser = users.find((u) => u.id === authenticatedUserId);
+          if (authUser && authUser.role === 'DELIVERY') {
+            setCurrentUserId(authenticatedUserId);
+            return;
+          }
+        }
+        setActivePortal('AUTH');
+      } else if (portal === 'RESTAURANT') {
+        const restUser = users.find((u) => u.role === 'RESTAURANT' && u.status === 'APPROVED');
+        if (restUser) {
+          setCurrentUserId(restUser.id);
+        }
+      } else if (portal === 'ADMIN') {
+        const adminUser = users.find((u) => u.role === 'ADMIN' && u.status === 'APPROVED');
+        if (adminUser) {
+          setCurrentUserId(adminUser.id);
+        }
+      } else if (portal === 'AUTH') {
+        // preserve authenticatedUser, just show login/signup view
+      }
+    },
+    [authenticatedUserId, users]
+  );
 
   const addAuditLog = useCallback(
     (action: string, details: string, targetId?: string) => {
@@ -561,7 +663,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               normalized === 'rahul.delivery@lastplate.in'))
       );
       if (user) {
+        setAuthenticatedUserId(user.id);
         setCurrentUserId(user.id);
+        setActivePortal(user.role === 'DELIVERY' ? 'DELIVERY' : 'CUSTOMER');
         const isDemo =
           user.id === 'user-customer-1' ||
           user.id === 'user-restaurant-1' ||
@@ -601,7 +705,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         } : undefined,
       };
       setUsers((prev) => [...prev, newUser]);
+      setAuthenticatedUserId(newUser.id);
       setCurrentUserId(newUser.id);
+      setActivePortal(newUser.role === 'DELIVERY' ? 'DELIVERY' : 'CUSTOMER');
       setCart([]);
       localStorage.removeItem(STORAGE_KEYS.CART);
       addAuditLog('USER_LOGIN', `Real ${newUser.role} user account created and signed in: ${newUser.email}`);
@@ -634,14 +740,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           },
         };
         setUsers((prev) => [...prev, newUser]);
+        setAuthenticatedUserId(newUser.id);
         setCurrentUserId(newUser.id);
+        setActivePortal('CUSTOMER');
         setCart([]);
         localStorage.removeItem(STORAGE_KEYS.CART);
         addAuditLog('GOOGLE_SIGNUP', `Real user ${newUser.email} signed up with Google.`);
         return true;
       }
 
+      setAuthenticatedUserId(existing.id);
       setCurrentUserId(existing.id);
+      setActivePortal(existing.role === 'DELIVERY' ? 'DELIVERY' : 'CUSTOMER');
       setCart([]);
       localStorage.removeItem(STORAGE_KEYS.CART);
       addAuditLog('GOOGLE_LOGIN', `User ${existing.email} authenticated via Google Auth.`);
@@ -676,7 +786,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           },
         };
         setUsers((prev) => [...prev, newUser]);
+        setAuthenticatedUserId(newUser.id);
         setCurrentUserId(newUser.id);
+        setActivePortal('CUSTOMER');
         setCart([]);
         localStorage.removeItem(STORAGE_KEYS.CART);
         addAuditLog('FIREBASE_GOOGLE_AUTH', `Authenticated Firebase user: ${targetName} (${targetEmail})`);
@@ -694,7 +806,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             : u
         )
       );
+      setAuthenticatedUserId(existing.id);
       setCurrentUserId(existing.id);
+      setActivePortal(existing.role === 'DELIVERY' ? 'DELIVERY' : 'CUSTOMER');
       setCart([]);
       localStorage.removeItem(STORAGE_KEYS.CART);
       addAuditLog('FIREBASE_GOOGLE_AUTH', `Authenticated Firebase user: ${existing.email}`);
@@ -705,27 +819,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const quickLoginDemo = useCallback(
     (role: UserRole) => {
-      if (role === 'CUSTOMER' || role === 'DELIVERY') {
-        return;
-      }
-      const demoUser = users.find((u) => u.role === role && u.status === 'APPROVED');
-      if (demoUser) {
-        setCurrentUserId(demoUser.id);
-        addAuditLog('DEMO_ROLE_SWITCH', `Switched active session to demo identity: ${demoUser.email} (${role})`);
+      if (role === 'RESTAURANT' || role === 'ADMIN') {
+        switchToPortal(role);
       }
     },
-    [users, addAuditLog]
+    [switchToPortal]
   );
 
   const logout = useCallback(() => {
-    if (currentUser) {
-      addAuditLog('USER_LOGOUT', `User ${currentUser.email} signed out.`);
+    if (authenticatedUser || currentUser) {
+      addAuditLog('USER_LOGOUT', `User ${authenticatedUser?.email || currentUser?.email} signed out.`);
     }
     signOutFirebase();
     setCart([]);
     localStorage.removeItem(STORAGE_KEYS.CART);
+    setAuthenticatedUserId(null);
     setCurrentUserId(null);
-  }, [currentUser, addAuditLog]);
+    setActivePortal('AUTH');
+  }, [authenticatedUser, currentUser, addAuditLog]);
 
   const registerCustomer = useCallback(
     (data: { name: string; email: string; phone: string; address: string }): boolean => {
@@ -749,7 +860,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       };
 
       setUsers((prev) => [...prev, newUser]);
+      setAuthenticatedUserId(newUser.id);
       setCurrentUserId(newUser.id);
+      setActivePortal('CUSTOMER');
       setCart([]);
       localStorage.removeItem(STORAGE_KEYS.CART);
       addAuditLog('CUSTOMER_REGISTERED', `Customer account created: ${newUser.email}`);
@@ -882,7 +995,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(nextUsers));
       localStorage.setItem(STORAGE_KEYS.APPS, JSON.stringify(nextApps));
       broadcastSync({ users: nextUsers, apps: nextApps });
+      setAuthenticatedUserId(newUser.id);
       setCurrentUserId(newUser.id);
+      setActivePortal('DELIVERY');
       setCart([]);
       localStorage.removeItem(STORAGE_KEYS.CART);
       addAuditLog('DELIVERY_APPLICATION_SUBMITTED', `Delivery partner application submitted by ${data.name} (${data.email}).`);
@@ -1564,6 +1679,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const resetDemoData = useCallback(() => {
     localStorage.removeItem(STORAGE_KEYS.USERS);
     localStorage.removeItem(STORAGE_KEYS.CURRENT_USER_ID);
+    localStorage.removeItem(STORAGE_KEYS.AUTHENTICATED_USER_ID);
+    localStorage.removeItem(STORAGE_KEYS.ACTIVE_PORTAL);
     localStorage.removeItem(STORAGE_KEYS.MENU);
     localStorage.removeItem(STORAGE_KEYS.SURPLUS);
     localStorage.removeItem(STORAGE_KEYS.ORDERS);
@@ -1573,7 +1690,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     localStorage.removeItem(STORAGE_KEYS.CART);
 
     setUsers(SEED_USERS);
-    setCurrentUserId('user-customer-1');
+    setAuthenticatedUserId(null);
+    setCurrentUserId(null);
+    setActivePortal('RESTAURANT');
     setMenuItems(SEED_MENU_ITEMS);
     setSurplusListings(SEED_SURPLUS_LISTINGS);
     setOrders(SEED_ORDERS);
@@ -1678,6 +1797,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const value = useMemo(
     () => ({
       currentUser,
+      authenticatedUser,
+      authenticatedUserId,
+      activePortal,
+      setActivePortal,
+      switchToPortal,
       users,
       menuItems,
       surplusListings,
@@ -1733,6 +1857,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }),
     [
       currentUser,
+      authenticatedUser,
+      authenticatedUserId,
+      activePortal,
+      setActivePortal,
+      switchToPortal,
       users,
       menuItems,
       surplusListings,

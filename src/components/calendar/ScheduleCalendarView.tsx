@@ -267,7 +267,8 @@ export const ScheduleCalendarView: React.FC<ScheduleCalendarViewProps> = () => {
             <div className="flex items-center gap-2">
               <Cpu className="w-4 h-4 text-zinc-900" />
               <h3 className="text-sm font-extrabold text-zinc-900 font-heading">
-                AI Accuracy Model Benchmark · {selectedDateObj.day}, Oct {selectedDateObj.date}
+                AI Accuracy Model Benchmark · {selectedDateObj.day},{' '}
+                {new Date(todayYear, todayMonth).toLocaleDateString('en-US', { month: 'short' })} {selectedDateObj.date}
               </h3>
               {targetFestival && (
                 <span className="px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 text-[10px] font-black">

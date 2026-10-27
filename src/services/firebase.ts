@@ -187,17 +187,8 @@ export const checkGoogleRedirectResult = async (): Promise<FirebaseLoginResult |
   }
 };
 
-export const signInWithGoogleRedirectFirebase = async (): Promise<void> => {
+export const signInWithGoogleRedirectFirebase = async (): Promise<FirebaseLoginResult> => {
   if (!auth) initializeFirebase();
-  if (!auth) {
-    throw new Error('Firebase Authentication is not configured yet.');
-  }
-  await signInWithRedirect(auth, googleProvider);
-};
-
-export const signInWithGoogleFirebase = async (): Promise<FirebaseLoginResult> => {
-  if (!auth) initializeFirebase();
-
   if (!isFirebaseConfigured() || !auth) {
     return {
       success: false,
@@ -205,88 +196,20 @@ export const signInWithGoogleFirebase = async (): Promise<FirebaseLoginResult> =
       isConfigurationMissing: true,
     };
   }
-
   try {
-
-    let timerId: any = null;
-    const timeoutPromise = new Promise<never>((_, reject) => {
-      timerId = setTimeout(() => {
-        const timeoutErr: any = new Error(
-          'Google Sign-In popup did not respond or was blocked by your browser. Please check your browser address bar to allow popups, or use the Redirect option below.'
-        );
-        timeoutErr.code = 'auth/popup-blocked';
-        reject(timeoutErr);
-      }, 20000);
-    });
-
-    try {
-      const result = await Promise.race([
-        signInWithPopup(auth, googleProvider),
-        timeoutPromise,
-      ]);
-      const fbUser: FirebaseUser = result.user;
-
-      const userData = {
-        uid: fbUser.uid,
-        email: fbUser.email,
-        displayName: fbUser.displayName || (fbUser.email ? fbUser.email.split('@')[0] : 'User'),
-        photoURL: fbUser.photoURL,
-      };
-
-      if (db && fbUser.uid) {
-        try {
-          const userRef = doc(db, 'users', fbUser.uid);
-          setDoc(
-            userRef,
-            {
-              uid: fbUser.uid,
-              email: fbUser.email,
-              displayName: fbUser.displayName,
-              photoURL: fbUser.photoURL,
-              lastLogin: new Date().toISOString(),
-            },
-            { merge: true }
-          ).catch((err) => {
-            console.warn('Firestore user sync notice:', err);
-          });
-        } catch (err) {
-          console.warn('Firestore user sync notice:', err);
-        }
-      }
-
-      return {
-        success: true,
-        user: userData,
-      };
-    } finally {
-      if (timerId) clearTimeout(timerId);
-    }
-  } catch (error: any) {
-    console.error('Firebase Google Sign-In error:', error);
-    let errorMessage = error.message || 'Failed to authenticate with Google.';
-    let isPopupBlocked = false;
-
-    if (error.code === 'auth/popup-closed-by-user') {
-      errorMessage = 'Sign-in cancelled: Google popup window was closed.';
-    } else if (error.code === 'auth/popup-blocked') {
-      errorMessage = 'Google sign-in popup was blocked or did not respond. Check your address bar for a "Pop-up blocked" icon, or try Google Redirect.';
-      isPopupBlocked = true;
-    } else if (error.code === 'auth/unauthorized-domain') {
-      errorMessage = 'This domain is not authorized in Firebase Console. Go to Firebase Console > Authentication > Settings > Authorized Domains and add "localhost".';
-    } else if (error.code === 'auth/network-request-failed') {
-      errorMessage = 'Network connection failure while connecting to Firebase.';
-    } else if (error.code === 'auth/configuration-not-found' || error.code === 'auth/operation-not-allowed') {
-      errorMessage = 'Google Sign-In is disabled in Firebase. Please enable Google provider under Firebase Console > Authentication > Sign-in method.';
-    } else if (error.code === 'auth/invalid-api-key') {
-      errorMessage = 'Invalid Firebase API Key. Please verify your Firebase project credentials.';
-    }
-
+    await signInWithRedirect(auth, googleProvider);
+    return { success: true };
+  } catch (err: any) {
+    console.error('Firebase Google redirect error:', err);
     return {
       success: false,
-      error: errorMessage,
-      isPopupBlocked,
+      error: err?.message || 'Failed to redirect to Google sign-in.',
     };
   }
+};
+
+export const signInWithGoogleFirebase = async (): Promise<FirebaseLoginResult> => {
+  return signInWithGoogleRedirectFirebase();
 };
 
 export const signInWithEmailFirebase = async (
